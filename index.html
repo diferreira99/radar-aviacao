@@ -14,285 +14,448 @@
 <meta name="apple-mobile-web-app-title" content="Radar Emprego">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <style>
+/* Mesmo visual do Prospecta+: barra lateral branca, topo com título da página, cartões brancos
+   com borda colorida em cima, laranja e azul como cores da marca. */
 :root {
-  --bg: #ffffff; --panel: #ffffff; --fg: #16202b; --muted: #5b6876; --line: #dde3ea;
-  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #f1f4f7; --bad: #b3261e; --good: #1d7a3e;
-  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
-  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --bg: #F2F4F7; --surface: #ffffff; --surface2: #F5F6FA; --border: #E4E7EF;
+  --accent: #FF6A00; --accent-light: rgba(255,106,0,0.08); --blue: #165DFF; --blue-light: rgba(22,93,255,0.10);
+  --text: #0D1330; --muted: #6b7488; --danger: #dc2626; --success: #16a34a; --purple: #7C3AED; --pink: #E23A6B;
+  --sidebar-w: 260px;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
   color-scheme: light;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; }
-body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
-  padding: max(28px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 56px max(16px, env(safe-area-inset-left)); }
 [hidden] { display: none !important; }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
-.eyebrow, .label { font-family: var(--mono); font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
-h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 7vw, 52px); line-height: 1; margin: 4px 0 6px; }
-h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .18em; }
-.lede { color: var(--muted); margin: 0; max-width: 64ch; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 16px; }
-.row { display: grid; gap: 8px; }
-.seg { display: flex; flex-wrap: wrap; gap: 6px; }
-.seg button, .chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
-.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; }
-.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
-.terms { display: flex; flex-wrap: wrap; gap: 6px; }
-form.add { display: flex; gap: 8px; flex-wrap: wrap; }
-input[type="text"], input[type="search"], textarea { flex: 1 1 220px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
-textarea { width: 100%; min-height: 140px; resize: vertical; }
-.ghost { display: inline-block; font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
-.go { font: inherit; font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 4px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.5; display: flex; overflow-x: hidden; }
+body::before { content: ""; position: fixed; inset: 0; background-image: radial-gradient(circle, rgba(255,106,0,0.06) 1px, transparent 1px); background-size: 32px 32px; opacity: .3; pointer-events: none; z-index: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, label:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+/* ── barra lateral ── */
+.sidebar { width: var(--sidebar-w); height: 100dvh; background: #fff; border-right: 1px solid #E8EAEF; display: flex; flex-direction: column; position: fixed; left: 0; top: 0; z-index: 200; overflow-y: auto; transition: transform .28s cubic-bezier(.4,0,.2,1);
+  padding-top: env(safe-area-inset-top); padding-left: env(safe-area-inset-left); }
+.sidebar-logo { padding: 26px 24px 20px; border-bottom: 1px solid var(--border); }
+.logo { font-size: 1.9rem; font-weight: 800; letter-spacing: -1px; line-height: 1; color: var(--text); }
+.logo .a { color: var(--accent); } .logo .b { color: var(--blue); }
+.brand-badge { display: inline-block; font-size: .62rem; font-weight: 700; background: linear-gradient(135deg, #FF6A00, #165DFF); color: #fff; padding: 3px 10px; border-radius: 4px; margin-top: 10px; letter-spacing: .3px; }
+.nav { padding: 14px 14px; display: flex; flex-direction: column; gap: 3px; }
+.nav-section { font-size: .62rem; font-weight: 800; color: var(--muted); letter-spacing: .6px; text-transform: uppercase; padding: 14px 10px 6px; display: flex; align-items: center; gap: 7px; }
+.nav-section i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border-radius: 10px; cursor: pointer; color: #6b7280; font-size: .9rem; font-weight: 500; border: 1px solid transparent; background: none; width: 100%; text-align: left; position: relative; }
+.nav-item:hover { background: rgba(255,106,0,.05); color: var(--accent); border-color: rgba(255,106,0,.12); }
+.nav-item.active { background: rgba(255,106,0,.08); color: var(--accent); border-color: rgba(255,106,0,.18); font-weight: 600; }
+.nav-item.active::before { content: ""; position: absolute; left: 6px; top: 9px; bottom: 9px; width: 3px; border-radius: 99px; background: linear-gradient(180deg, #FF6A00, #165DFF); }
+.nav-item .icon { width: 26px; height: 26px; border-radius: 8px; display: inline-grid; place-items: center; font-size: .9rem; flex: none; color: #fff; }
+.nav-item .count-badge { margin-left: auto; font-size: .64rem; font-weight: 800; color: #fff; background: var(--accent); border-radius: 20px; padding: 1px 8px; }
+.sidebar-footer { padding: 16px; border-top: 1px solid var(--border); margin-top: auto; }
+.user-card { padding: 12px 14px; border-radius: 12px; background: var(--surface2); border: 1px solid #E8EAEF; display: grid; gap: 8px; }
+.side-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .74rem; color: var(--muted); }
+.side-row b { font-weight: 700; font-size: .72rem; }
+.side-row b.on { color: var(--success); } .side-row b.off { color: var(--danger); }
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 190; }
+.sidebar-overlay.active { display: block; }
+
+/* ── área principal ── */
+.main { margin-left: var(--sidebar-w); flex: 1; min-width: 0; height: 100dvh; display: flex; flex-direction: column; position: relative; z-index: 1; }
+.topbar { flex-shrink: 0; background: #fff; border-bottom: 1px solid #E8EAEF; padding: env(safe-area-inset-top) max(20px, env(safe-area-inset-right)) 0 28px; min-height: 62px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.topbar-left { display: flex; align-items: center; min-width: 0; }
+.menu-toggle { display: none; background: none; border: 0; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--muted); font-size: 1.4rem; line-height: 1; margin-right: 8px; }
+.page-title { font-size: 1.05rem; font-weight: 700; }
+.page-subtitle { font-size: .7rem; color: var(--muted); margin-top: 1px; }
+.topbar-actions { display: flex; align-items: center; gap: 8px; }
+.content { flex: 1; min-width: 0; overflow-y: auto; padding: 24px max(20px, env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); }
+.tab { display: none; max-width: 1080px; margin: 0 auto; }
+.tab.active { display: grid; gap: 18px; }
+
+/* ── botões e campos ── */
+.btn, .ghost { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 600; padding: 8px 14px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface2); color: #475069; cursor: pointer; text-decoration: none; white-space: nowrap; }
+.btn:hover, .ghost:hover { border-color: var(--accent); color: var(--accent); }
+.go, .btn-primary { display: inline-flex; align-items: center; gap: 6px; font-size: .86rem; font-weight: 700; padding: 10px 18px; border-radius: 10px; border: 0; background: linear-gradient(135deg, #FF6A00, #FF8A33); color: #fff; cursor: pointer; text-decoration: none; box-shadow: 0 4px 14px rgba(255,106,0,.25); white-space: nowrap; }
 .go:disabled { opacity: .6; cursor: progress; }
-a.go { text-decoration: none; display: inline-block; }
+.btn-dark { background: var(--text); color: #fff; border-color: var(--text); }
+.btn-dark:hover { color: #fff; opacity: .9; }
+input[type="text"], input[type="search"], textarea, select { border: 1.5px solid var(--border); border-radius: 10px; padding: 9px 12px; background: #fff; font-size: .86rem; min-width: 0; }
+input[type="text"], input[type="search"] { flex: 1 1 220px; }
+textarea { width: 100%; min-height: 150px; resize: vertical; }
+input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent); }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
-.status { color: var(--muted); font-size: 14px; }
-.status.err { color: var(--bad); }
-.progress { display: flex; flex-wrap: wrap; gap: 6px; }
-.progress span { font-family: var(--mono); font-size: 12px; border: 1px solid var(--line); border-radius: 3px; padding: 1px 8px; color: var(--muted); }
-.progress .done { color: var(--good); border-color: var(--good); }
-.progress .fail { color: var(--bad); border-color: var(--bad); }
-.toolbar { display: grid; gap: 10px; }
-.count { font-family: var(--display); font-size: 24px; font-weight: 600; }
-.hidden-note { color: var(--muted); font-size: 14px; font-family: var(--body); font-weight: 400; margin-left: 8px; }
-select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
-.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+form.add { display: flex; gap: 8px; flex-wrap: wrap; }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; cursor: pointer; white-space: nowrap; color: #334155; }
 .check input { width: 16px; height: 16px; accent-color: var(--accent); }
-.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-.job { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
-.job.recent { border-left: 5px solid var(--accent); }
+.status { color: var(--muted); font-size: .8rem; }
+.status.err { color: var(--danger); }
+
+/* ── cartões ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; display: grid; gap: 14px; min-width: 0; }
+.card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card-title { font-size: 1rem; font-weight: 700; margin: 0; }
+.card-sub { font-size: .8rem; color: var(--muted); margin: 0; }
+.pill-muted { font-size: .64rem; font-weight: 600; color: var(--muted); border: 1px solid var(--border); border-radius: 99px; padding: 1px 9px; }
+.label { font-size: .66rem; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--muted); }
+.row { display: grid; gap: 8px; min-width: 0; }
+
+.hero { background: linear-gradient(110deg, #0D1330 0%, #12205f 55%, #165DFF 100%); color: #fff; border-radius: 16px; padding: 22px 24px; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -70px; width: 220px; height: 220px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #FF8A33, #E25E00); opacity: .95; }
+.hero > * { position: relative; z-index: 1; max-width: 70%; }
+.hero small { font-size: .66rem; letter-spacing: .8px; text-transform: uppercase; color: #cdd5f3; }
+.hero h2 { margin: 4px 0 4px; font-size: 1.55rem; font-weight: 800; letter-spacing: -.5px; }
+.hero p { margin: 0; font-size: .82rem; color: #dbe2ff; }
+.hero .actions { margin-top: 14px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--k, var(--accent)); border-radius: 14px; padding: 14px 16px; min-width: 0; }
+.kpi span { display: block; font-size: .74rem; color: var(--muted); font-weight: 500; }
+.kpi b { display: block; font-size: 1.75rem; font-weight: 800; color: var(--k, var(--accent)); line-height: 1.15; margin-top: 4px; }
+.kpi small { display: block; font-size: .68rem; color: var(--muted); }
+
+/* ── filtros da busca ── */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .chip { font-size: .8rem; border: 1.5px solid var(--border); background: #fff; color: #475069; border-radius: 99px; padding: 5px 13px; cursor: pointer; font-weight: 500; }
+.seg button:hover { border-color: var(--accent); color: var(--accent); }
+.seg button[aria-pressed="true"] { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.terms { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 12px; background: var(--surface2); cursor: default; }
+.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
+.progress { display: flex; flex-wrap: wrap; gap: 6px; }
+.progress span { font-size: .72rem; font-weight: 600; border: 1px solid var(--border); border-radius: 99px; padding: 2px 10px; color: var(--muted); background: #fff; }
+.progress .done { color: var(--success); border-color: #bbf7d0; background: #f0fdf4; }
+.progress .fail { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
+.filters { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.toggles { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+
+/* ── lista de vagas ── */
+.list-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.count { font-size: 1.35rem; font-weight: 800; letter-spacing: -.3px; }
+.hidden-note { color: var(--muted); font-size: .8rem; font-weight: 500; margin-left: 6px; }
+.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.job { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 16px; }
+.job.recent { border-left: 4px solid var(--accent); }
 .job.st-descartada { opacity: .55; }
-.job h3 { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
-.job h3 a { color: var(--fg); text-decoration: none; }
-.job h3 a:hover { color: var(--link); text-decoration: underline; }
-.meta { color: var(--muted); font-size: 14px; min-width: 0; }
-.meta strong { color: var(--fg); font-weight: 500; }
-.salary { color: var(--fg); font-weight: 500; }
-.when { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; white-space: pre-line; grid-row: 1 / span 2; grid-column: 2; }
-.tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
-.tag { font-size: 12px; background: var(--chip); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+.job-title { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+.job h3 { margin: 0; font-size: .98rem; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.job h3 a { color: var(--text); text-decoration: none; }
+.job h3 a:hover { color: var(--accent); }
+.logo-img, .job .logo { width: 42px; height: 42px; border-radius: 10px; object-fit: contain; background: #fff; border: 1px solid var(--border); flex: none; }
+.job .logo.initials { display: grid; place-items: center; font-weight: 800; font-size: .95rem; color: #475069; background: var(--surface2); }
+.meta { color: var(--muted); font-size: .84rem; min-width: 0; }
+.meta strong { color: #334155; font-weight: 600; }
+.salary { color: var(--success); font-weight: 700; }
+.when { font-family: var(--mono); font-size: .7rem; color: var(--muted); text-align: right; white-space: pre-line; grid-row: 1 / span 2; grid-column: 2; }
+.tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.tag { font-size: .7rem; background: var(--surface2); border-radius: 6px; padding: 1px 7px; color: var(--muted); }
 .srcs { display: flex; flex-wrap: wrap; gap: 4px; }
-.src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; color: var(--link); }
-.src:hover { border-color: var(--link); }
-.cat { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 1px 6px; }
-.cat-3 { background: var(--accent); color: var(--accent-ink); }
-.cat-2 { background: var(--chip); color: var(--fg); }
-.badge-new { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 3px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
-.job-title { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
-.logo { width: 40px; height: 40px; border-radius: 6px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
-.logo.initials { display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--muted); background: var(--chip); }
-.pill { font-size: 12px; border-radius: 3px; padding: 1px 6px; border: 1px solid var(--line); color: var(--fg); }
-.pill.pcd { border-color: var(--link); color: var(--link); }
-.pill.soon { border-color: var(--bad); color: var(--bad); font-weight: 600; }
-.pill.perk { color: var(--good); border-color: var(--good); }
-.badge-status { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
-.toggle { grid-column: 1 / -1; justify-self: start; font: inherit; font-size: 13px; color: var(--link); background: none; border: 0; padding: 4px 0; cursor: pointer; }
-.panel-detail { grid-column: 1 / -1; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+.src { font-size: .64rem; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; text-decoration: none; border-radius: 6px; padding: 2px 7px; color: var(--blue); background: var(--blue-light); }
+.cat { font-size: .64rem; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; border-radius: 6px; padding: 2px 8px; }
+.cat-3 { background: var(--accent); color: #fff; }
+.cat-2 { background: #fff1e6; color: #c2410c; }
+.cat-1 { background: var(--surface2); color: #475069; }
+.pill { font-size: .7rem; font-weight: 600; border-radius: 99px; padding: 1px 9px; border: 1px solid var(--border); color: #475069; background: #fff; }
+.pill.pcd { border-color: #c7d7fe; color: var(--blue); background: #eef3ff; }
+.pill.soon { border-color: #fecaca; color: var(--danger); background: #fef2f2; font-weight: 700; }
+.pill.perk { border-color: #bbf7d0; color: var(--success); background: #f0fdf4; }
+.badge-new { font-size: .62rem; font-weight: 800; text-transform: uppercase; color: #fff; background: var(--accent); border-radius: 6px; padding: 2px 7px; margin-right: 6px; vertical-align: 2px; }
+.badge-status { font-size: .74rem; color: var(--muted); margin-left: 6px; font-weight: 500; }
+.toggle { grid-column: 1 / -1; justify-self: start; font-size: .8rem; font-weight: 600; color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer; }
+.panel-detail { grid-column: 1 / -1; display: grid; gap: 10px; border-top: 1px dashed var(--border); padding-top: 12px; margin-top: 4px; }
 .status-row { display: flex; flex-wrap: wrap; gap: 6px; }
-.status-row button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
-.status-row button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.status-row button { font-size: .78rem; font-weight: 600; border: 1.5px solid var(--border); background: #fff; color: #475069; border-radius: 99px; padding: 4px 12px; cursor: pointer; }
+.status-row button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
 .facts { display: flex; flex-wrap: wrap; gap: 6px; }
-.fact { font-size: 13px; background: var(--chip); border-radius: 4px; padding: 2px 8px; }
-.fact.lic { border: 1px solid var(--accent); background: transparent; font-weight: 600; }
-.highlights { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
-.detail-note { color: var(--muted); font-size: 13px; }
-.match { font-size: 14px; display: grid; gap: 4px; }
-.match strong { font-family: var(--display); font-size: 18px; }
-.match .miss { color: var(--bad); }
-.match .hit { color: var(--good); }
-details.box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; }
-details.box[open] { display: grid; gap: 12px; }
-details.box summary { cursor: pointer; list-style: none; }
-details.box summary::-webkit-details-marker { display: none; }
-details.box summary::before { content: "▸ "; color: var(--muted); }
-details.box[open] summary::before { content: "▾ "; }
-.box-title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: .02em; }
-.box-sub { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
-.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.link-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
-.link-list span { min-width: 0; overflow-wrap: break-word; flex: 1 1 40%; }
-.link-list span.analysis { display: grid; gap: 14px; }
-.analysis h4 { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 600; }
-.gap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.gap-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 14px; }
-.gap-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
-.gap-bar span { display: block; height: 100%; background: var(--accent); }
-.gap-list.good .gap-bar span { background: var(--good); }
-.gap-list .num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
-.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
-.checklist .ok::before { content: "✓ "; color: var(--good); font-weight: 700; }
-.checklist .todo::before { content: "✗ "; color: var(--bad); font-weight: 700; }
-.bars { flex: 0 1 45%; overflow-wrap: normal; }
-.link-list a, .link-list button.lnk { color: var(--link); font: inherit; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; padding: 0; }
-.bars { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+.fact { font-size: .76rem; background: var(--surface2); border-radius: 8px; padding: 3px 9px; }
+.fact.lic { border: 1.5px solid var(--accent); background: var(--accent-light); color: #c2410c; font-weight: 700; }
+.highlights { margin: 0; padding-left: 18px; font-size: .84rem; display: grid; gap: 2px; color: #334155; }
+.detail-note { color: var(--muted); font-size: .8rem; }
+.detail-note strong { color: #334155; }
+.match { font-size: .84rem; display: grid; gap: 4px; background: var(--surface2); border-radius: 10px; padding: 10px 12px; }
+.match strong { font-size: 1rem; }
+.match .miss { color: var(--danger); } .match .hit { color: var(--success); }
+.empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1.5px dashed var(--border); border-radius: 14px; background: #fff; }
+details.diag { font-size: .78rem; color: var(--muted); }
+details.diag li.err { color: var(--danger); }
+
+/* ── listas (empresas, posts, melhores vagas) ── */
+.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.link-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; background: #fff; }
+.link-list span { min-width: 0; overflow-wrap: break-word; flex: 1 1 40%; font-size: .86rem; }
+.link-list span.bars { flex: 0 1 45%; overflow-wrap: normal; font-size: .74rem; color: var(--muted); text-align: right; }
+.link-list a, .link-list button.lnk { color: var(--accent); font-weight: 700; font-size: .8rem; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; padding: 0; }
+
+/* ── meu perfil x vagas ── */
+.analysis { display: grid; gap: 14px; }
+.analysis h4 { margin: 0; font-size: .95rem; font-weight: 700; }
+.gap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.gap-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 10px; align-items: center; font-size: .84rem; }
+.gap-bar { grid-column: 1 / -1; height: 8px; border-radius: 99px; background: #E0E6EF; overflow: hidden; }
+.gap-bar span { display: block; height: 100%; border-radius: 99px; background: var(--accent); }
+.gap-list.good .gap-bar span { background: var(--success); }
+.gap-list .num { font-size: .72rem; color: var(--muted); font-weight: 600; }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: .84rem; }
+.checklist .ok::before { content: "✓ "; color: var(--success); font-weight: 800; }
+.checklist .todo::before { content: "✗ "; color: var(--danger); font-weight: 800; }
 .code { font-family: var(--mono); letter-spacing: .05em; }
-.empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1px dashed var(--line); border-radius: 6px; }
-details.diag { font-size: 13px; color: var(--muted); }
-details.diag li.err { color: var(--bad); }
+.tip { background: #f5f7ff; border-left: 3px solid var(--blue); border-radius: 8px; padding: 9px 12px; font-size: .8rem; color: #334155; }
+.tip.warn { background: #fff7ed; border-left-color: #F59E0B; }
+
+@media (max-width: 1000px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: none; box-shadow: 0 0 40px rgba(0,0,0,.2); }
+  .main { margin-left: 0; }
+  .menu-toggle { display: inline-block; }
+  .topbar { padding-left: max(14px, env(safe-area-inset-left)); }
+  .topbar-actions .btn span { display: none; }
+  .hero > * { max-width: 100%; }
+  .hero::after { width: 140px; height: 140px; right: -50px; top: -60px; }
+}
 @media (max-width: 560px) {
+  .link-list li { flex-wrap: wrap; gap: 4px 12px; }
+  .link-list span { flex: 1 1 100%; }
+  .link-list span.bars { flex: 1 1 auto; text-align: left; }
   .job { grid-template-columns: 1fr; }
   .when { grid-row: auto; grid-column: auto; text-align: left; }
+  .filters { grid-template-columns: 1fr; }
+  .content { padding-top: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="eyebrow">LinkedIn · Indeed · Gupy · Vagas.com.br</div>
-    <h1>Radar <span>Emprego Novo</span></h1>
-    <p class="lede">As vagas dos principais sites de emprego numa lista só, sem repetidas, com as mais importantes para você no topo.</p>
+<div class="sidebar-overlay" id="overlay"></div>
+
+<aside class="sidebar" id="sidebar" aria-label="Menu">
+  <div class="sidebar-logo">
+    <div class="logo">Radar<span class="a">Emprego</span><span class="b">+</span></div>
+    <span class="brand-badge" id="brand-niche">Aviação</span>
+  </div>
+  <nav class="nav">
+    <button class="nav-item" data-tab="painel"><span class="icon" style="background:#165DFF">◉</span>Painel</button>
+    <div class="nav-section"><i style="background:#FF6A00"></i>Vagas</div>
+    <button class="nav-item" data-tab="vagas"><span class="icon" style="background:#FF6A00">☰</span>Vagas<span class="count-badge" id="nav-count" hidden></span></button>
+    <button class="nav-item" data-tab="buscar"><span class="icon" style="background:#E23A6B">⌕</span>Buscar</button>
+    <button class="nav-item" data-tab="empresas"><span class="icon" style="background:#0f766e">▦</span>Empresas</button>
+    <button class="nav-item" data-tab="posts"><span class="icon" style="background:#0a66c2">in</span>Posts do LinkedIn</button>
+    <div class="nav-section"><i style="background:#7C3AED"></i>Você</div>
+    <button class="nav-item" data-tab="perfil"><span class="icon" style="background:#7C3AED">✦</span>Meu perfil</button>
+    <button class="nav-item" data-tab="nuvem"><span class="icon" style="background:#94a3b8">☁</span>Nuvem</button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="side-row">Nuvem <b id="side-sync" class="off">Desconectada</b></div>
+      <div class="side-row">Currículo <b id="side-cv" class="off">Não enviado</b></div>
+      <div class="side-row">LinkedIn <b id="side-li" class="off">Não enviado</b></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menu" aria-label="Abrir menu">☰</button>
+      <div>
+        <div class="page-title" id="page-title">Painel</div>
+        <div class="page-subtitle" id="page-subtitle">Resumo das suas vagas</div>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn" id="csv-top" type="button">⤓ <span>Exportar CSV</span></button>
+      <button class="btn btn-dark" id="go-top" type="button">⌕ <span>Buscar vagas</span></button>
+    </div>
   </header>
 
-  <section class="panel" aria-label="Filtros">
-    <div class="row">
-      <span class="label" id="lbl-niche">Nicho</span>
-      <div class="seg" role="group" aria-labelledby="lbl-niche" id="niche"></div>
-    </div>
-    <div class="row">
-      <span class="label" id="lbl-src">Fontes</span>
-      <div class="seg" role="group" aria-labelledby="lbl-src" id="src"></div>
-    </div>
-    <div class="row">
-      <span class="label" id="lbl-time">Publicadas em</span>
-      <div class="seg" role="group" aria-labelledby="lbl-time" id="time"></div>
-    </div>
-    <div class="row">
-      <span class="label" id="lbl-loc">Região</span>
-      <div class="seg" role="group" aria-labelledby="lbl-loc" id="loc"></div>
-    </div>
-    <div class="row">
-      <span class="label">Termos</span>
-      <div class="terms" id="terms"></div>
-      <form class="add" id="add-form">
-        <input id="add-input" type="text" placeholder="Adicionar termo, ex.: inspetor de qualidade" aria-label="Novo termo">
-        <button class="ghost" type="submit">Adicionar</button>
-        <button class="ghost" type="button" id="reset">Termos padrão</button>
-      </form>
-    </div>
-    <div class="actions">
-      <button class="go" id="go" type="button">Buscar vagas</button>
-      <span class="status" id="status" role="status"></span>
-    </div>
-    <div class="progress" id="progress" aria-live="polite"></div>
-  </section>
+  <main class="content">
 
-  <details class="box" id="posts">
-    <summary><span class="box-title">Posts de recrutadores no LinkedIn</span>
-      <span class="box-sub">Abre a busca de posts no seu navegador, já logado. Nada é feito em seu nome.</span></summary>
-    <div class="actions">
-      <a class="go" id="posts-all" href="#" target="_blank" rel="noopener">Ver todos os posts ↗</a>
-      <span class="status" id="posts-info"></span>
-    </div>
-    <ul class="link-list" id="post-links"></ul>
-  </details>
-
-  <details class="box" id="me">
-    <summary><span class="box-title">Meu currículo e nuvem</span>
-      <span class="box-sub">Envie seu currículo em PDF para ver o quanto cada vaga combina com você, e conecte à nuvem para ver seus status no celular e no computador.</span></summary>
-    <div class="row">
-      <span class="label">Currículo</span>
-      <div class="actions">
-        <label class="ghost" for="cv-file">Enviar currículo em PDF</label>
-        <input id="cv-file" type="file" accept="application/pdf,.pdf,text/plain,.txt" hidden>
-        <span class="status" id="cv-file-info"></span>
+    <!-- PAINEL -->
+    <section class="tab" data-tab="painel">
+      <div class="hero">
+        <small>Radar Emprego Novo</small>
+        <h2 id="hero-title">Olá! 👋</h2>
+        <p id="hero-text">As vagas do LinkedIn, Indeed, Gupy e Vagas.com.br numa lista só.</p>
+        <div class="actions"><button class="go" type="button" data-go>Buscar vagas agora</button></div>
       </div>
-      <textarea id="cv" aria-label="Texto do currículo" placeholder="O texto do PDF aparece aqui. Você também pode colar o currículo direto: cursos, licenças, experiências, idiomas…"></textarea>
-      <span class="status" id="cv-info">O currículo fica salvo só neste aparelho; o arquivo é lido aqui mesmo e não é enviado para nenhum servidor.</span>
-    </div>
-    <div class="row">
-      <span class="label">Perfil do LinkedIn</span>
-      <input id="li-url" type="text" placeholder="https://www.linkedin.com/in/seu-perfil" aria-label="Link do seu perfil no LinkedIn" autocomplete="off">
-      <span class="status">O LinkedIn não deixa sites lerem perfis pelo link. Baixe o seu perfil em PDF: abra o seu perfil no LinkedIn (de preferência no computador), toque em <strong>Mais</strong> (ou <strong>Recursos</strong>) e depois em <strong>Salvar em PDF</strong>. Envie o arquivo aqui.</span>
-      <div class="actions">
-        <label class="ghost" for="li-file">Enviar perfil do LinkedIn (PDF)</label>
-        <input id="li-file" type="file" accept="application/pdf,.pdf" hidden>
-        <a class="ghost" id="li-open" href="#" target="_blank" rel="noopener" hidden>Abrir meu perfil ↗</a>
-        <button class="ghost" type="button" id="li-clear" hidden>Remover perfil</button>
+      <div class="kpis">
+        <div class="kpi" style="--k:#FF6A00"><span>Vagas na lista</span><b id="k-total">—</b><small id="k-total-sub">faça uma busca</small></div>
+        <div class="kpi" style="--k:#165DFF"><span>Novas desde a última busca</span><b id="k-new">—</b><small>ainda não vistas</small></div>
+        <div class="kpi" style="--k:#7C3AED"><span id="k-top-label">Planejamento</span><b id="k-top">—</b><small id="k-top-sub">no topo da lista</small></div>
+        <div class="kpi" style="--k:#16a34a"><span>Candidaturas</span><b id="k-apply">—</b><small id="k-apply-sub">candidatei + entrevista</small></div>
       </div>
-      <span class="status" id="li-info">Nenhum perfil enviado.</span>
-    </div>
-    <div class="row">
-      <span class="label">Conectar na nuvem</span>
-      <span class="status">Com um código, os status das vagas (vista, candidatei, entrevista, descartada) ficam guardados na nuvem: aparecem no celular e no computador, e entram no resumo de segunda no WhatsApp. Use o mesmo código em todos os seus aparelhos.</span>
-      <form class="add" id="sync-form">
-        <input id="sync-code" class="code" type="text" placeholder="Ex.: radar-7k2m9x4q" aria-label="Código de sincronização" autocomplete="off">
-        <button class="ghost" type="submit">Conectar</button>
-        <button class="ghost" type="button" id="sync-new">Gerar código novo</button>
-      </form>
-      <span class="status" id="sync-info">Ainda não conectado: os status ficam só neste aparelho.</span>
-    </div>
-  </details>
-
-  <section class="row" aria-label="Resultados" id="results" hidden>
-    <div class="toolbar">
-      <span class="count" id="count"></span>
-      <div class="actions">
-        <select id="sort" aria-label="Ordenar">
-          <option value="score">Mais importantes primeiro</option>
-          <option value="date">Mais recentes</option>
-        </select>
-        <select id="level" aria-label="Nível">
-          <option value="">Todos os níveis</option>
-          <option value="estagio">Estágio</option>
-          <option value="trainee">Trainee</option>
-          <option value="junior">Júnior</option>
-          <option value="pleno">Pleno</option>
-          <option value="senior">Sênior / especialista</option>
-          <option value="lideranca">Liderança</option>
-        </select>
-        <select id="workplace" aria-label="Modelo de trabalho">
-          <option value="">Qualquer modelo</option>
-          <option value="Presencial">Presencial</option>
-          <option value="Híbrido">Híbrido</option>
-          <option value="Remoto">Remoto</option>
-        </select>
-        <select id="contract" aria-label="Tipo de contrato">
-          <option value="">Qualquer contrato</option>
-          <option value="Efetivo">Efetivo / CLT</option>
-          <option value="Estágio">Estágio</option>
-          <option value="Temporário">Temporário</option>
-          <option value="PJ">PJ</option>
-          <option value="Trainee">Trainee</option>
-          <option value="Aprendiz">Aprendiz</option>
-        </select>
-        <label class="check"><input id="only-pcd" type="checkbox"> Só vagas que aceitam PcD</label>
-        <label class="check"><input id="only-niche" type="checkbox" checked> <span id="only-niche-label">Só vagas do nicho</span></label>
-        <label class="check"><input id="only-salary" type="checkbox"> Só com salário</label>
-        <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Melhores vagas para você</h3><span class="pill-muted" id="best-when">—</span></div>
+        <ul class="link-list" id="best"></ul>
+        <div class="actions"><button class="btn" type="button" data-nav="vagas">Ver todas as vagas →</button></div>
       </div>
-      <div class="actions">
-        <input id="filter" type="search" placeholder="Filtrar por cargo, empresa ou cidade" aria-label="Filtrar resultados">
-        <button class="ghost" id="csv" type="button">Baixar planilha (CSV)</button>
+    </section>
+
+    <!-- VAGAS -->
+    <section class="tab" data-tab="vagas">
+      <div class="card">
+        <div class="filters">
+          <select id="sort" aria-label="Ordenar">
+            <option value="score">Mais importantes primeiro</option>
+            <option value="date">Mais recentes</option>
+          </select>
+          <select id="level" aria-label="Nível">
+            <option value="">Todos os níveis</option>
+            <option value="estagio">Estágio</option>
+            <option value="trainee">Trainee</option>
+            <option value="junior">Júnior</option>
+            <option value="pleno">Pleno</option>
+            <option value="senior">Sênior / especialista</option>
+            <option value="lideranca">Liderança</option>
+          </select>
+          <select id="workplace" aria-label="Modelo de trabalho">
+            <option value="">Qualquer modelo</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Híbrido">Híbrido</option>
+            <option value="Remoto">Remoto</option>
+          </select>
+          <select id="contract" aria-label="Tipo de contrato">
+            <option value="">Qualquer contrato</option>
+            <option value="Efetivo">Efetivo / CLT</option>
+            <option value="Estágio">Estágio</option>
+            <option value="Temporário">Temporário</option>
+            <option value="PJ">PJ</option>
+            <option value="Trainee">Trainee</option>
+            <option value="Aprendiz">Aprendiz</option>
+          </select>
+        </div>
+        <div class="actions">
+          <input id="filter" type="search" placeholder="Filtrar por cargo, empresa ou cidade" aria-label="Filtrar resultados">
+        </div>
+        <div class="toggles">
+          <label class="check"><input id="only-niche" type="checkbox" checked> <span id="only-niche-label">Só vagas do nicho</span></label>
+          <label class="check"><input id="only-salary" type="checkbox"> Só com salário</label>
+          <label class="check"><input id="only-pcd" type="checkbox"> Só que aceitam PcD</label>
+          <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
+        </div>
       </div>
-    </div>
 
-    <details class="box" id="analysis-box">
-      <summary><span class="box-title">Meu perfil x vagas</span>
-        <span class="box-sub">Compara seu currículo e seu perfil do LinkedIn com as vagas mais importantes da lista e mostra o que melhorar.</span></summary>
-      <div class="actions">
-        <button class="go" id="analyze" type="button">Analisar meu perfil</button>
-        <span class="status" id="analysis-info"></span>
+      <div id="results" class="row" hidden>
+        <div class="list-head"><span class="count" id="count"></span><button class="btn" id="csv" type="button">⤓ Baixar planilha (CSV)</button></div>
+        <ul class="jobs" id="jobs"></ul>
+        <details class="diag"><summary>Resultado por fonte e termo</summary><ul id="diag"></ul></details>
       </div>
-      <div id="analysis" class="analysis"></div>
-    </details>
+      <div class="empty" id="placeholder">Nenhuma busca ainda. Toque em <strong>Buscar vagas</strong> no topo da tela.</div>
+    </section>
 
-    <details class="box" id="companies-box">
-      <summary><span class="box-title">Quem está contratando</span>
-        <span class="box-sub">Empresas com mais vagas na lista atual. Toque numa empresa para filtrar.</span></summary>
-      <ul class="link-list" id="companies"></ul>
-    </details>
+    <!-- BUSCAR -->
+    <section class="tab" data-tab="buscar">
+      <div class="card">
+        <div class="row">
+          <span class="label" id="lbl-niche">Nicho</span>
+          <div class="seg" role="group" aria-labelledby="lbl-niche" id="niche"></div>
+        </div>
+        <div class="row">
+          <span class="label" id="lbl-src">Fontes</span>
+          <div class="seg" role="group" aria-labelledby="lbl-src" id="src"></div>
+        </div>
+        <div class="row">
+          <span class="label" id="lbl-time">Publicadas em</span>
+          <div class="seg" role="group" aria-labelledby="lbl-time" id="time"></div>
+        </div>
+        <div class="row">
+          <span class="label" id="lbl-loc">Região</span>
+          <div class="seg" role="group" aria-labelledby="lbl-loc" id="loc"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Termos de busca</h3><span class="pill-muted">cargos e palavras-chave</span></div>
+        <div class="terms" id="terms"></div>
+        <form class="add" id="add-form">
+          <input id="add-input" type="text" placeholder="Adicionar termo, ex.: inspetor de qualidade" aria-label="Novo termo">
+          <button class="btn" type="submit">Adicionar</button>
+          <button class="btn" type="button" id="reset">Termos padrão</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="actions">
+          <button class="go" id="go" type="button">Buscar vagas</button>
+          <span class="status" id="status" role="status"></span>
+        </div>
+        <div class="progress" id="progress" aria-live="polite"></div>
+      </div>
+    </section>
 
-    <ul class="jobs" id="jobs"></ul>
-    <details class="diag"><summary>Resultado por fonte e termo</summary><ul id="diag"></ul></details>
-  </section>
+    <!-- EMPRESAS -->
+    <section class="tab" data-tab="empresas">
+      <div class="card" id="companies-box">
+        <div class="card-head"><h3 class="card-title">Quem está contratando</h3><span class="pill-muted">lista atual</span></div>
+        <p class="card-sub">Empresas com mais vagas na sua lista. Toque em Filtrar para ver só as vagas da empresa.</p>
+        <ul class="link-list" id="companies"></ul>
+      </div>
+      <div class="empty" id="companies-empty">Faça uma busca para ver quem está contratando.</div>
+    </section>
 
-  <div class="empty" id="placeholder">Escolha o nicho, o período e a região e toque em <strong>Buscar vagas</strong>. As vagas aparecem conforme cada site responde.</div>
+    <!-- POSTS -->
+    <section class="tab" data-tab="posts">
+      <div class="card" id="posts">
+        <div class="card-head"><h3 class="card-title">Posts de recrutadores no LinkedIn</h3></div>
+        <p class="card-sub">Abre a busca de posts no seu navegador, já logado. Nada é feito em seu nome.</p>
+        <div class="actions">
+          <a class="go" id="posts-all" href="#" target="_blank" rel="noopener">Ver todos os posts ↗</a>
+          <span class="status" id="posts-info"></span>
+        </div>
+        <ul class="link-list" id="post-links"></ul>
+      </div>
+    </section>
+
+    <!-- MEU PERFIL -->
+    <section class="tab" data-tab="perfil" id="me">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Meu currículo</h3><span class="pill-muted">fica só neste aparelho</span></div>
+        <div class="actions">
+          <label class="go" for="cv-file" tabindex="0">Enviar currículo em PDF</label>
+          <input id="cv-file" type="file" accept="application/pdf,.pdf,text/plain,.txt" hidden>
+          <span class="status" id="cv-file-info"></span>
+        </div>
+        <textarea id="cv" aria-label="Texto do currículo" placeholder="O texto do PDF aparece aqui. Você também pode colar o currículo direto: cursos, licenças, experiências, idiomas…"></textarea>
+        <span class="status" id="cv-info">O arquivo é lido aqui mesmo e não é enviado para nenhum servidor.</span>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Perfil do LinkedIn</h3></div>
+        <input id="li-url" type="text" placeholder="https://www.linkedin.com/in/seu-perfil" aria-label="Link do seu perfil no LinkedIn" autocomplete="off">
+        <div class="tip">O LinkedIn não deixa sites lerem perfis pelo link. Baixe o seu perfil em PDF: abra o seu perfil no LinkedIn (de preferência no computador), toque em <strong>Mais</strong> (ou <strong>Recursos</strong>) e depois em <strong>Salvar em PDF</strong>. Envie o arquivo aqui.</div>
+        <div class="actions">
+          <label class="btn" for="li-file" tabindex="0">Enviar perfil do LinkedIn (PDF)</label>
+          <input id="li-file" type="file" accept="application/pdf,.pdf" hidden>
+          <a class="btn" id="li-open" href="#" target="_blank" rel="noopener" hidden>Abrir meu perfil ↗</a>
+          <button class="btn" type="button" id="li-clear" hidden>Remover perfil</button>
+        </div>
+        <span class="status" id="li-info">Nenhum perfil enviado.</span>
+      </div>
+      <div class="card" id="analysis-box">
+        <div class="card-head"><h3 class="card-title">Meu perfil x vagas</h3></div>
+        <p class="card-sub">Compara seu currículo e seu perfil do LinkedIn com as 15 vagas mais importantes da sua lista e mostra o que melhorar.</p>
+        <div class="actions">
+          <button class="go" id="analyze" type="button">Analisar meu perfil</button>
+          <span class="status" id="analysis-info"></span>
+        </div>
+        <div id="analysis" class="analysis"></div>
+      </div>
+    </section>
+
+    <!-- NUVEM -->
+    <section class="tab" data-tab="nuvem">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Conectar na nuvem</h3></div>
+        <p class="card-sub">Com um código, os status das vagas (vista, candidatei, entrevista, descartada) ficam guardados na nuvem: aparecem no celular e no computador, e entram no resumo de segunda no WhatsApp.</p>
+        <div class="tip">No primeiro aparelho, toque em <strong>Gerar código novo</strong> e depois em <strong>Conectar</strong>. Nos outros, digite <strong>o mesmo código</strong> e toque em <strong>Conectar</strong>. Guarde o código como uma senha.</div>
+        <form class="add" id="sync-form">
+          <input id="sync-code" class="code" type="text" placeholder="Ex.: radar-7k2m9x4q" aria-label="Código de sincronização" autocomplete="off">
+          <button class="go" type="submit">Conectar</button>
+          <button class="btn" type="button" id="sync-new">Gerar código novo</button>
+        </form>
+        <span class="status" id="sync-info">Ainda não conectado: os status ficam só neste aparelho.</span>
+      </div>
+    </section>
+
+  </main>
 </div>
 
 <script>
@@ -407,6 +570,7 @@ function renderFilters() {
   const n = niche();
   $("only-niche-label").textContent = n.filters ? `Só vagas de ${n.label.toLowerCase()}` : "Só vagas do nicho";
   $("only-niche").closest("label").hidden = !n.filters;
+  $("brand-niche").textContent = n.label;
   renderPosts();
 }
 
@@ -488,6 +652,7 @@ function visibleJobs() {
 }
 
 function renderJobs() {
+  renderDashboard();
   const { list, hidden } = visibleJobs();
   const fresh = list.filter(j => state.fresh.has(jobKey(j))).length;
   $("count").textContent = `${list.length} vaga${list.length === 1 ? "" : "s"}`;
@@ -530,11 +695,12 @@ function renderCompanies(list) {
     bars.textContent = `${c.total} vaga${c.total === 1 ? "" : "s"}` + (cats[2] && c.top ? ` · ${c.top} em ${cats[3].toLowerCase()} e ${cats[2].toLowerCase()}` : "");
     const b = document.createElement("button");
     b.type = "button"; b.className = "lnk"; b.textContent = "Filtrar";
-    b.onclick = () => { $("filter").value = company; renderJobs(); $("jobs").scrollIntoView({ behavior: "smooth" }); };
+    b.onclick = () => { $("filter").value = company; renderJobs(); navigate("vagas"); };
     li.append(name, bars, b);
     ul.append(li);
   }
   $("companies-box").hidden = !top.length;
+  $("companies-empty").hidden = top.length > 0;
 }
 
 function jobCard(j) {
@@ -742,7 +908,10 @@ function setJobStatus(j, value, render = true) {
   if (render) renderJobs();
 }
 
-function setSyncInfo(msg, err = false) { const s = $("sync-info"); s.textContent = msg; s.classList.toggle("err", err); }
+function setSyncInfo(msg, err = false) {
+  const s = $("sync-info"); s.textContent = msg; s.classList.toggle("err", err);
+  renderSide();
+}
 
 async function pullStatuses() {
   if (!state.syncCode) return;
@@ -796,6 +965,8 @@ async function search() {
   if (!state.terms.length) { setStatus("Adicione ao menos um termo.", true); return; }
   const go = $("go");
   go.disabled = true; go.textContent = "Buscando…";
+  $("go-top").disabled = true;
+  navigate("vagas");
   setStatus(`Buscando ${state.terms.length} termo(s)…`);
   const collected = [];
   const runs = [];
@@ -826,6 +997,7 @@ async function search() {
   const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   setStatus(failed ? `Atualizado às ${hora}. ${failed} fonte(s) não responderam; veja "Resultado por fonte e termo".` : `Atualizado às ${hora}.`, failed === state.sources.length);
   go.disabled = false; go.textContent = "Buscar vagas";
+  $("go-top").disabled = false;
 }
 
 // "first"/"update" mostram o que já chegou; "final" marca as novas e guarda o resultado.
@@ -858,6 +1030,7 @@ function showCached() {
   } else {
     state.jobs = []; state.fresh = new Set();
     $("results").hidden = true; $("placeholder").hidden = false;
+    renderDashboard();
     setStatus("");
   }
   $("progress").innerHTML = "";
@@ -947,6 +1120,7 @@ async function readCvFile(file) {
     }
     $("cv").value = content;
     store.set("rav.cv", content);
+    renderSide();
     info.textContent = `${file.name} lido: ${content.split(/\s+/).length} palavras.`;
     if (state.jobs.length) renderJobs();
   } catch (e) {
@@ -957,6 +1131,7 @@ async function readCvFile(file) {
 $("cv-file").onchange = (e) => { const f = e.target.files?.[0]; if (f) readCvFile(f); e.target.value = ""; };
 
 function renderProfileInfo() {
+  setTimeout(renderSide);
   const url = store.get("rav.linkedinUrl", "");
   const profile = store.get("rav.profile", "");
   $("li-url").value = url;
@@ -1129,6 +1304,80 @@ $("sync-new").onclick = () => {
   setSyncInfo("Código gerado. Toque em \"Conectar\" e digite o mesmo código nos seus outros aparelhos.");
 };
 
+/* ---------- páginas (menu lateral) ---------- */
+
+const PAGES = {
+  painel: ["Painel", "Resumo das suas vagas"],
+  vagas: ["Vagas", "Todas as vagas encontradas, sem repetidas"],
+  buscar: ["Buscar", "Nicho, fontes, região, período e termos"],
+  empresas: ["Empresas", "Quem está contratando agora"],
+  posts: ["Posts do LinkedIn", "Recrutadores anunciando vagas"],
+  perfil: ["Meu perfil", "Currículo, LinkedIn e o que melhorar"],
+  nuvem: ["Nuvem", "Seus status em todos os aparelhos"],
+};
+function navigate(tab) {
+  if (!PAGES[tab]) tab = "painel";
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === tab));
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.tab === tab));
+  [$("page-title").textContent, $("page-subtitle").textContent] = PAGES[tab];
+  store.set("rav.tab", tab);
+  $("sidebar").classList.remove("open"); $("overlay").classList.remove("active");
+  document.querySelector(".content").scrollTop = 0;
+}
+document.querySelectorAll(".nav-item").forEach(b => b.onclick = () => navigate(b.dataset.tab));
+document.querySelectorAll("[data-nav]").forEach(b => b.onclick = () => navigate(b.dataset.nav));
+document.querySelectorAll("[data-go]").forEach(b => b.onclick = search);
+$("go-top").onclick = search;
+$("csv-top").onclick = downloadCsv;
+$("menu").onclick = () => { $("sidebar").classList.add("open"); $("overlay").classList.add("active"); };
+$("overlay").onclick = () => { $("sidebar").classList.remove("open"); $("overlay").classList.remove("active"); };
+
+function renderSide() {
+  const set = (id, on, yes, no) => { const b = $(id); b.textContent = on ? yes : no; b.className = on ? "on" : "off"; };
+  set("side-sync", Boolean(state.syncCode), "Conectada", "Desconectada");
+  set("side-cv", $("cv").value.trim().length > 40, "Enviado", "Não enviado");
+  set("side-li", Boolean(store.get("rav.profile", "")), "Enviado", "Não enviado");
+}
+
+function renderDashboard() {
+  const has = state.jobs.length > 0;
+  const { list } = visibleJobs();
+  const fresh = list.filter(j => state.fresh.has(jobKey(j))).length;
+  const cats = niche().categories;
+  const top = list.filter(j => j.score === 3).length, mid = list.filter(j => j.score === 2).length;
+  const applied = Object.values(state.status).filter(s => s === "candidatei" || s === "entrevista").length;
+  const interviews = Object.values(state.status).filter(s => s === "entrevista").length;
+  $("k-total").textContent = has ? list.length : "—";
+  $("k-total-sub").textContent = has ? `${state.sources.length} fonte(s) · ${LOCS.find(l => l[0] === state.loc)?.[1] || ""}` : "faça uma busca";
+  $("k-new").textContent = has ? fresh : "—";
+  $("k-top-label").textContent = cats[3] || "Destaques";
+  $("k-top").textContent = has ? (cats[3] ? top : list.length) : "—";
+  $("k-top-sub").textContent = cats[2] ? `+ ${mid} em ${cats[2].toLowerCase()}` : "na sua lista";
+  $("k-apply").textContent = applied;
+  $("k-apply-sub").textContent = interviews ? `${interviews} em entrevista` : "candidatei + entrevista";
+  $("hero-text").textContent = has
+    ? `${fresh ? `${fresh} vaga${fresh === 1 ? " nova" : "s novas"} desde a sua última busca. ` : ""}${list.length} vaga${list.length === 1 ? "" : "s"} na sua lista de ${niche().label.toLowerCase()}.`
+    : "As vagas do LinkedIn, Indeed, Gupy e Vagas.com.br numa lista só. Comece buscando vagas.";
+  const badge = $("nav-count"); badge.hidden = !fresh; badge.textContent = fresh;
+  const ul = $("best");
+  ul.innerHTML = "";
+  if (!has) {
+    const li = document.createElement("li"); li.textContent = "Faça uma busca para ver as melhores vagas aqui."; ul.append(li);
+  }
+  for (const j of list.slice(0, 5)) {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    const b = document.createElement("strong"); b.textContent = j.title;
+    name.append(b, ` · ${j.company || "Empresa não informada"}`);
+    const meta = document.createElement("span"); meta.className = "bars";
+    meta.textContent = [cats[j.score], j.location, j.salary].filter(Boolean).join(" · ");
+    const a = document.createElement("a"); a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Abrir ↗";
+    li.append(name, meta, a); ul.append(li);
+  }
+  const last = store.get(`rav.last.${state.niche}`, null);
+  $("best-when").textContent = last?.fetchedAt ? `busca de ${new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "—";
+}
+
 async function boot() {
   try {
     const res = await fetch("/api/nichos");
@@ -1138,9 +1387,11 @@ async function boot() {
       if (!NICHES[state.niche]) state.niche = data.default;
     }
   } catch {}
+  navigate(store.get("rav.tab", "painel"));
   loadTerms();
   renderFilters();
   showCached();
+  renderSide();
   pullStatuses();
   const last = store.get(`rav.last.${state.niche}`, null);
   const stale = !last?.jobs?.length || Date.now() - new Date(last.fetchedAt).getTime() > 2 * 3600000 || !("workplace" in last.jobs[0]);

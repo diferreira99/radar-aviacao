@@ -1,6 +1,6 @@
 // Deixa o site instalável e abre a última versão da página mesmo sem internet.
 // As rotas /api nunca são guardadas: vagas e status sempre vêm da rede.
-const CACHE = "radar-emprego-v2";
+const CACHE = "radar-emprego-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 // Apaga as versões antigas guardadas para o site nunca abrir desatualizado.
