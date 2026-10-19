@@ -66,13 +66,16 @@ export default async function handler(req, res) {
       if (!seen) {
         const relevant = isRelevant(job, niche);
         // "aviation" fica como sinônimo de "relevant" para quem já usa a API (alerta do n8n).
-        merged.set(key, { ...job, relevant, aviation: relevant, score: score(job, niche), terms: [r.term], links: { [r.source]: job.url } });
+        merged.set(key, { ...job, badges: [...(job.badges ?? [])], relevant, aviation: relevant, score: score(job, niche), terms: [r.term], links: { [r.source]: job.url } });
         continue;
       }
       if (!seen.terms.includes(r.term)) seen.terms.push(r.term);
       seen.links[r.source] ??= job.url;
       if (job.date > seen.date) seen.date = job.date;
-      seen.salary ||= job.salary;
+      // Cada fonte sabe coisas diferentes da mesma vaga: completa o que faltar.
+      for (const f of ["salary", "workplace", "contract", "level", "deadline", "logo", "companyUrl", "snippet"]) seen[f] ||= job[f];
+      seen.pcd ||= job.pcd;
+      for (const b of job.badges ?? []) if (!seen.badges.includes(b)) seen.badges.push(b);
     }
   }
   const jobs = [...merged.values()].sort((a, b) => (b.date || "").localeCompare(a.date || ""));

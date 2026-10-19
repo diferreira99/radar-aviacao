@@ -18,9 +18,12 @@ O nicho padrão é **aviação** (manutenção, planejamento, MRO, engenharia). 
   - `gupy.js`: busca do portal da Gupy (`portal.gupy.io/api/job-search/jobs`).
   - `vagas.js`: página de busca do Vagas.com.br.
 - `lib/locations.js`: regiões e como cada fonte as entende.
+- `lib/enrich.js`: traduz o que cada fonte devolve para os mesmos rótulos de modelo de trabalho, contrato e nível.
 - `lib/relevance.js`: marca se a vaga é do nicho (pelo cargo ou pela empresa) e dá a nota para ordenar.
 
 A seção "Posts de recrutadores no LinkedIn" só monta links de busca de posts: quem abre é o navegador da pessoa, já logado, sem automação na conta.
+
+Além de cargo, empresa, cidade, data e link, cada vaga traz o que a fonte informar: modelo de trabalho, tipo de contrato, nível, salário, PcD, prazo de inscrição, logo e selos (como "Candidatura simplificada"). Ao abrir os detalhes, o anúncio completo acrescenta número de candidatos, nível, tipo de emprego, área e setor (LinkedIn), licenças, inglês e requisitos. No Indeed, se a busca com os campos extras for recusada, o site refaz a busca só com o básico.
 
 No navegador ficam guardados os filtros, o currículo, a última busca, as vagas já vistas (para marcar as novas) e os status. Com um código de sincronização, os status também vão para o n8n e aparecem em outros aparelhos.
 
