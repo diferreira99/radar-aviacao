@@ -65,6 +65,25 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .salary { color: var(--fg); font-weight: 500; }
 .check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
 .check input { width: 16px; height: 16px; accent-color: var(--accent); }
+.job { cursor: default; }
+.job-head { display: contents; }
+.toggle { grid-column: 1 / -1; justify-self: start; font: inherit; font-size: 13px; color: var(--link); background: none; border: 0; padding: 4px 0; cursor: pointer; }
+.panel-detail { grid-column: 1 / -1; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
+.status-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.status-row button { font: inherit; font-size: 13px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.status-row button[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; }
+.fact { font-size: 13px; background: var(--chip); border-radius: 4px; padding: 2px 8px; }
+.fact.lic { border: 1px solid var(--accent); background: transparent; font-weight: 600; }
+.highlights { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
+.detail-note { color: var(--muted); font-size: 13px; }
+.cat { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 1px 6px; }
+.cat-3 { background: var(--accent); color: var(--accent-ink); }
+.cat-2 { background: var(--chip); color: var(--fg); }
+.badge-new { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 3px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
+.badge-status { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
+.job.st-descartada { opacity: .55; }
+select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
 .hidden-note { color: var(--muted); font-size: 14px; font-family: var(--body); font-weight: 400; margin-left: 8px; }
 .srcs { display: flex; flex-wrap: wrap; gap: 4px; }
 .src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none;
@@ -119,7 +138,12 @@ details.diag li.err { color: var(--bad); }
     <div class="toolbar">
       <span class="count" id="count"></span>
       <div class="actions">
+        <select id="sort" aria-label="Ordenar">
+          <option value="score">Planejamento primeiro</option>
+          <option value="date">Mais recentes</option>
+        </select>
         <label class="check"><input id="only-aviation" type="checkbox" checked> Só vagas de aviação</label>
+        <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
         <input id="filter" type="search" placeholder="Filtrar por cargo, empresa ou cidade" aria-label="Filtrar resultados">
         <button class="ghost" id="csv" type="button">Baixar planilha (CSV)</button>
       </div>
@@ -143,11 +167,18 @@ const LOCS = [
   ["gru", "Guarulhos", "SBGR"],
   ["cps", "Campinas", "SBKP"],
   ["sjc", "S. J. dos Campos", "SBSJ"],
+  ["jun", "Jundiaí", "SBJD"],
+  ["sor", "Sorocaba", "SDCO"],
+  ["bau", "Bauru", "SBAE"],
+  ["tau", "Taubaté", "SBTA"],
   ["estado", "Estado de SP", ""],
   ["br", "Brasil todo", ""]
 ];
 const SOURCES = [["linkedin", "LinkedIn"], ["indeed", "Indeed"], ["gupy", "Gupy"], ["vagas", "Vagas.com.br"]];
 const SOURCE_NAME = Object.fromEntries(SOURCES);
+const CATEGORY = { 3: "Planejamento", 2: "Manutenção", 1: "Setor aéreo" };
+const STATUSES = [["vista", "Vista"], ["candidatei", "Candidatei"], ["entrevista", "Entrevista"], ["descartada", "Descartada"]];
+const STATUS_NAME = Object.fromEntries(STATUSES);
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -158,8 +189,15 @@ const state = {
   loc: store.get("rav.loc", "sp"),
   sources: store.get("rav.sources", SOURCES.map(s => s[0])),
   terms: store.get("rav.terms", DEFAULT_TERMS.slice()),
+  status: store.get("rav.status", {}),   // chave da vaga -> vista/candidatei/entrevista/descartada
+  seen: new Set(store.get("rav.seen", [])), // vagas já mostradas em buscas anteriores
+  fresh: new Set(),                        // vagas que apareceram pela primeira vez na última busca
+  open: new Set(),
+  details: {},
   jobs: []
 };
+const normText = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const jobKey = j => `${normText(j.title)}|${normText(j.company)}`;
 const $ = (id) => document.getElementById(id);
 if (!LOCS.some(l => l[0] === state.loc)) state.loc = "sp";
 state.sources = state.sources.filter(s => SOURCE_NAME[s]);
@@ -224,17 +262,28 @@ function fmtDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
-function renderJobs() {
+function visibleJobs() {
   const f = $("filter").value.trim().toLowerCase();
   const onlyAviation = $("only-aviation").checked;
-  const pool = onlyAviation ? state.jobs.filter(j => j.aviation !== false) : state.jobs;
+  const hideDiscarded = $("hide-discarded").checked;
+  const pool = state.jobs.filter(j =>
+    (!onlyAviation || j.aviation !== false) &&
+    (!hideDiscarded || state.status[jobKey(j)] !== "descartada"));
   const list = pool.filter(j => !f || [j.title, j.company, j.location].join(" ").toLowerCase().includes(f));
-  const hidden = state.jobs.length - pool.length;
+  const byDate = (a, b) => (b.date || "").localeCompare(a.date || "");
+  list.sort($("sort").value === "score" ? (a, b) => (b.score ?? 0) - (a.score ?? 0) || byDate(a, b) : byDate);
+  return { list, hidden: state.jobs.length - pool.length };
+}
+
+function renderJobs() {
+  const { list, hidden } = visibleJobs();
+  const fresh = list.filter(j => state.fresh.has(jobKey(j))).length;
   $("count").textContent = `${list.length} vaga${list.length === 1 ? "" : "s"}`;
-  if (hidden) {
+  const notes = [fresh && `${fresh} nova${fresh === 1 ? "" : "s"}`, hidden && `${hidden} escondida${hidden === 1 ? "" : "s"}`].filter(Boolean);
+  if (notes.length) {
     const n = document.createElement("span");
     n.className = "hidden-note";
-    n.textContent = `(${hidden} fora do setor escondida${hidden === 1 ? "" : "s"})`;
+    n.textContent = `(${notes.join(" · ")})`;
     $("count").append(n);
   }
   const ul = $("jobs");
@@ -246,37 +295,120 @@ function renderJobs() {
     ul.append(li);
     return;
   }
-  for (const j of list) {
-    const li = document.createElement("li");
-    li.className = "job" + (daysAgo(j.date) <= 2 ? " new" : "");
-    const h = document.createElement("h3");
-    const a = document.createElement("a");
-    a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = j.title || "(sem título)";
-    h.append(a);
-    const meta = document.createElement("div");
-    meta.className = "meta";
-    const co = document.createElement("strong"); co.textContent = j.company || "Empresa não informada";
-    meta.append(co, ` · ${j.location}`);
-    if (j.salary) { const s = document.createElement("span"); s.className = "salary"; s.textContent = ` · ${j.salary}`; meta.append(s); }
-    const when = document.createElement("div");
-    when.className = "when";
-    when.textContent = [fmtDate(j.date), j.posted].filter(Boolean).join("\n");
-    when.style.whiteSpace = "pre-line";
-    const tags = document.createElement("div");
-    tags.className = "tags";
-    for (const t of j.terms) { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; tags.append(s); }
-    const srcs = document.createElement("div");
-    srcs.className = "srcs";
-    for (const [key, href] of Object.entries(j.links)) {
-      const s = document.createElement("a");
-      s.className = "src"; s.href = href; s.target = "_blank"; s.rel = "noopener";
-      s.textContent = SOURCE_NAME[key] || key;
-      srcs.append(s);
-    }
-    tags.prepend(srcs);
-    li.append(h, when, meta, tags);
-    ul.append(li);
+  for (const j of list) ul.append(jobCard(j));
+}
+
+function jobCard(j) {
+  const key = jobKey(j);
+  const st = state.status[key];
+  const li = document.createElement("li");
+  li.className = "job" + (daysAgo(j.date) <= 2 ? " new" : "") + (st ? ` st-${st}` : "");
+  const h = document.createElement("h3");
+  if (state.fresh.has(key)) { const b = document.createElement("span"); b.className = "badge-new"; b.textContent = "Nova"; h.append(b); }
+  const a = document.createElement("a");
+  a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = j.title || "(sem título)";
+  a.onclick = () => { if (!state.status[key]) setStatus_(key, "vista", false); };
+  h.append(a);
+  if (st) { const b = document.createElement("span"); b.className = "badge-status"; b.textContent = `· ${STATUS_NAME[st]}`; h.append(b); }
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  const co = document.createElement("strong"); co.textContent = j.company || "Empresa não informada";
+  meta.append(co, ` · ${j.location}`);
+  if (j.salary) { const s = document.createElement("span"); s.className = "salary"; s.textContent = ` · ${j.salary}`; meta.append(s); }
+  const when = document.createElement("div");
+  when.className = "when";
+  when.textContent = [fmtDate(j.date), j.posted].filter(Boolean).join("\n");
+  when.style.whiteSpace = "pre-line";
+  const tags = document.createElement("div");
+  tags.className = "tags";
+  if (CATEGORY[j.score]) { const c = document.createElement("span"); c.className = `cat cat-${j.score}`; c.textContent = CATEGORY[j.score]; tags.append(c); }
+  const srcs = document.createElement("div");
+  srcs.className = "srcs";
+  for (const [src, href] of Object.entries(j.links)) {
+    const s = document.createElement("a");
+    s.className = "src"; s.href = href; s.target = "_blank"; s.rel = "noopener";
+    s.textContent = SOURCE_NAME[src] || src;
+    srcs.append(s);
   }
+  tags.append(srcs);
+  for (const t of j.terms) { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; tags.append(s); }
+  const toggle = document.createElement("button");
+  toggle.type = "button"; toggle.className = "toggle";
+  const isOpen = state.open.has(key);
+  toggle.textContent = isOpen ? "Fechar ▴" : "Detalhes e status ▾";
+  toggle.setAttribute("aria-expanded", String(isOpen));
+  toggle.onclick = () => {
+    isOpen ? state.open.delete(key) : state.open.add(key);
+    if (!isOpen) loadDetails(j);
+    renderJobs();
+  };
+  li.append(h, when, meta, tags, toggle);
+  if (isOpen) li.append(detailPanel(j, key));
+  return li;
+}
+
+function detailPanel(j, key) {
+  const box = document.createElement("div");
+  box.className = "panel-detail";
+  const row = document.createElement("div");
+  row.className = "status-row";
+  for (const [value, label] of STATUSES) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", String(state.status[key] === value));
+    b.onclick = () => setStatus_(key, state.status[key] === value ? null : value);
+    row.append(b);
+  }
+  box.append(row);
+  const d = state.details[key];
+  const note = document.createElement("div");
+  note.className = "detail-note";
+  if (!d || d.loading) { note.textContent = "Lendo o anúncio…"; box.append(note); return box; }
+  if (d.error) { note.textContent = `Não deu para ler o anúncio (${d.error}). Abra a vaga no site.`; box.append(note); return box; }
+  const facts = document.createElement("div");
+  facts.className = "facts";
+  for (const l of d.licenses) { const f = document.createElement("span"); f.className = "fact lic"; f.textContent = l; facts.append(f); }
+  for (const v of [d.english, d.experience, d.salary, ...d.regime].filter(Boolean)) {
+    const f = document.createElement("span"); f.className = "fact"; f.textContent = v; facts.append(f);
+  }
+  if (facts.childElementCount) box.append(facts);
+  if (d.highlights.length) {
+    const ul = document.createElement("ul");
+    ul.className = "highlights";
+    for (const h of d.highlights) { const li = document.createElement("li"); li.textContent = h; ul.append(li); }
+    box.append(ul);
+  } else {
+    note.textContent = d.excerpt ? d.excerpt.slice(0, 400) + "…" : "O anúncio não lista requisitos.";
+    box.append(note);
+  }
+  return box;
+}
+
+// Lê o anúncio pela fonte mais fácil de abrir: LinkedIn, Gupy, Vagas.com.br e, por último, Indeed.
+async function loadDetails(j) {
+  const key = jobKey(j);
+  if (state.details[key]) return;
+  state.details[key] = { loading: true };
+  const order = ["linkedin", "gupy", "vagas", "indeed"].filter(src => j.links[src]);
+  let last = "sem link";
+  for (const src of order) {
+    try {
+      const res = await fetch("/api/detalhe?" + new URLSearchParams({ source: src, url: j.links[src] }));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
+      state.details[key] = data;
+      renderJobs();
+      return;
+    } catch (e) { last = e.message; }
+  }
+  state.details[key] = { error: last };
+  renderJobs();
+}
+
+function setStatus_(key, value, render = true) {
+  if (value) state.status[key] = value; else delete state.status[key];
+  store.set("rav.status", state.status);
+  if (render) renderJobs();
 }
 
 function renderDiag(runs) {
@@ -300,16 +432,12 @@ async function search() {
     const res = await fetch("/api/vagas?" + p);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
-    state.jobs = data.jobs;
-    $("placeholder").hidden = true;
-    $("results").hidden = false;
-    renderJobs();
-    renderDiag(data.runs);
+    showResults(data, true);
     const failed = data.runs.filter(r => r.error).length;
     const hora = new Date(data.fetchedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     setStatus(failed
       ? `Atualizado às ${hora}. ${failed} busca(s) falharam; veja "Resultado por fonte e termo".`
-      : `Atualizado às ${hora}.`, failed === data.runs.length);
+      : `Atualizado às ${hora}.`, failed > 0 && failed === data.runs.length);
   } catch (e) {
     setStatus("Não foi possível buscar: " + e.message + ". Tente de novo em alguns minutos.", true);
   } finally {
@@ -317,13 +445,32 @@ async function search() {
   }
 }
 
+// Marca as vagas que nunca apareceram antes como novas e guarda o resultado para abrir o site já com a lista.
+function showResults(data, fromSearch) {
+  state.jobs = data.jobs;
+  if (fromSearch) {
+    state.fresh = new Set(data.jobs.map(jobKey).filter(k => !state.seen.has(k)));
+    if (!state.seen.size) state.fresh = new Set(); // primeira busca: nada é "novo"
+    data.jobs.forEach(j => state.seen.add(jobKey(j)));
+    store.set("rav.seen", [...state.seen].slice(-5000));
+    store.set("rav.last", { ...data, fresh: [...state.fresh] });
+  } else {
+    state.fresh = new Set(data.fresh || []);
+  }
+  $("placeholder").hidden = true;
+  $("results").hidden = false;
+  renderJobs();
+  renderDiag(data.runs);
+}
+
 function setStatus(msg, err = false) { const s = $("status"); s.textContent = msg; s.classList.toggle("err", err); }
 
 function downloadCsv() {
-  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
   const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
-  const row = j => ({ ...j, sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
-  const rows = [cols.map(c => esc(c[1])).join(";"), ...state.jobs.filter(j => !$("only-aviation").checked || j.aviation !== false).map(row).map(j => cols.map(c => esc(j[c[0]])).join(";"))];
+  const row = j => ({ ...j, category: CATEGORY[j.score] || "", status: STATUS_NAME[state.status[jobKey(j)]] || "",
+    sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
+  const rows = [cols.map(c => esc(c[1])).join(";"), ...visibleJobs().list.map(row).map(j => cols.map(c => esc(j[c[0]])).join(";"))];
   const blob = new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -347,7 +494,16 @@ $("only-aviation").onchange = () => {
   renderJobs();
 };
 $("csv").onclick = downloadCsv;
+$("sort").onchange = () => { store.set("rav.sort", $("sort").value); renderJobs(); };
+$("hide-discarded").onchange = renderJobs;
+$("sort").value = store.get("rav.sort", "score");
 renderFilters();
+const last = store.get("rav.last", null);
+if (last?.jobs?.length) {
+  showResults(last, false);
+  const quando = new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+  setStatus(`Mostrando a última busca (${quando}). Toque em Buscar vagas para atualizar.`);
+}
 </script>
 </body>
 </html>

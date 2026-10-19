@@ -4,7 +4,7 @@ import * as gupy from "../lib/sources/gupy.js";
 import * as vagas from "../lib/sources/vagas.js";
 import { LOCATIONS } from "../lib/locations.js";
 import { norm } from "../lib/util.js";
-import { isAviation } from "../lib/relevance.js";
+import { isAviation, score } from "../lib/relevance.js";
 
 const SOURCES = { linkedin, indeed, gupy, vagas };
 const MAX_TERMS = 15;
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       const key = `${norm(job.title)}|${norm(job.company)}`;
       const seen = merged.get(key);
       if (!seen) {
-        merged.set(key, { ...job, aviation: isAviation(job), terms: [r.term], links: { [r.source]: job.url } });
+        merged.set(key, { ...job, aviation: isAviation(job), score: score(job), terms: [r.term], links: { [r.source]: job.url } });
         continue;
       }
       if (!seen.terms.includes(r.term)) seen.terms.push(r.term);
