@@ -63,6 +63,10 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .tag { font-size: 12px; background: var(--chip); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
 .salary { color: var(--fg); font-weight: 500; }
+.srcs { display: flex; flex-wrap: wrap; gap: 4px; }
+.src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none;
+  border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; color: var(--link); }
+.src:hover { border-color: var(--link); }
 .empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1px dashed var(--line); border-radius: 6px; }
 details.diag { font-size: 13px; color: var(--muted); }
 details.diag li.err { color: var(--bad); }
@@ -75,12 +79,16 @@ details.diag li.err { color: var(--bad); }
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">Vagas do LinkedIn · Setor aéreo</div>
+    <div class="eyebrow">LinkedIn · Indeed · Gupy · Vagas.com.br</div>
     <h1>Radar <span>Aviação SP</span></h1>
-    <p class="lede">Busca vagas de manutenção, planejamento e de todo o setor de aviação no LinkedIn, junta os resultados de todos os termos e remove as repetidas.</p>
+    <p class="lede">Busca vagas de manutenção, planejamento e de todo o setor de aviação nos principais sites de emprego, junta os resultados e remove as repetidas.</p>
   </header>
 
   <section class="panel" aria-label="Filtros">
+    <div class="row">
+      <span class="label" id="lbl-src">Fontes</span>
+      <div class="seg" role="group" aria-labelledby="lbl-src" id="src"></div>
+    </div>
     <div class="row">
       <span class="label" id="lbl-time">Publicadas em</span>
       <div class="seg" role="group" aria-labelledby="lbl-time" id="time"></div>
@@ -113,10 +121,10 @@ details.diag li.err { color: var(--bad); }
       </div>
     </div>
     <ul class="jobs" id="jobs"></ul>
-    <details class="diag"><summary>Resultado por termo</summary><ul id="diag"></ul></details>
+    <details class="diag"><summary>Resultado por fonte e termo</summary><ul id="diag"></ul></details>
   </section>
 
-  <div class="empty" id="placeholder">Escolha o período e a região e toque em <strong>Buscar vagas</strong>. A busca leva de 10 a 30 segundos.</div>
+  <div class="empty" id="placeholder">Escolha o período e a região e toque em <strong>Buscar vagas</strong>. A busca leva de 20 a 50 segundos.</div>
 </div>
 
 <script>
@@ -127,13 +135,15 @@ const DEFAULT_TERMS = [
 ];
 const TIMES = [["24h", "24 horas"], ["week", "7 dias"], ["month", "30 dias"], ["any", "Qualquer data"]];
 const LOCS = [
-  ["São Paulo, São Paulo, Brasil", "São Paulo", "SBSP"],
-  ["Guarulhos, São Paulo, Brasil", "Guarulhos", "SBGR"],
-  ["Campinas, São Paulo, Brasil", "Campinas", "SBKP"],
-  ["São José dos Campos, São Paulo, Brasil", "S. J. dos Campos", "SBSJ"],
-  ["São Paulo, Brasil", "Estado de SP", ""],
-  ["Brasil", "Brasil todo", ""]
+  ["sp", "São Paulo", "SBSP"],
+  ["gru", "Guarulhos", "SBGR"],
+  ["cps", "Campinas", "SBKP"],
+  ["sjc", "S. J. dos Campos", "SBSJ"],
+  ["estado", "Estado de SP", ""],
+  ["br", "Brasil todo", ""]
 ];
+const SOURCES = [["linkedin", "LinkedIn"], ["indeed", "Indeed"], ["gupy", "Gupy"], ["vagas", "Vagas.com.br"]];
+const SOURCE_NAME = Object.fromEntries(SOURCES);
 
 const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
@@ -141,12 +151,36 @@ const store = {
 };
 const state = {
   time: store.get("rav.time", "week"),
-  loc: store.get("rav.loc", LOCS[0][0]),
+  loc: store.get("rav.loc", "sp"),
+  sources: store.get("rav.sources", SOURCES.map(s => s[0])),
   terms: store.get("rav.terms", DEFAULT_TERMS.slice()),
   jobs: []
 };
 const $ = (id) => document.getElementById(id);
-function save() { store.set("rav.time", state.time); store.set("rav.loc", state.loc); store.set("rav.terms", state.terms); }
+if (!LOCS.some(l => l[0] === state.loc)) state.loc = "sp";
+state.sources = state.sources.filter(s => SOURCE_NAME[s]);
+if (!state.sources.length) state.sources = SOURCES.map(s => s[0]);
+function save() {
+  store.set("rav.time", state.time); store.set("rav.loc", state.loc);
+  store.set("rav.terms", state.terms); store.set("rav.sources", state.sources);
+}
+
+function sourceToggles() {
+  const el = $("src");
+  el.innerHTML = "";
+  for (const [key, label] of SOURCES) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    const on = state.sources.includes(key);
+    b.setAttribute("aria-pressed", String(on));
+    b.onclick = () => {
+      if (on && state.sources.length === 1) return;
+      state.sources = on ? state.sources.filter(s => s !== key) : [...state.sources, key];
+      save(); renderFilters();
+    };
+    el.append(b);
+  }
+}
 
 function seg(el, items, key) {
   el.innerHTML = "";
@@ -161,6 +195,7 @@ function seg(el, items, key) {
 }
 
 function renderFilters() {
+  sourceToggles();
   seg($("time"), TIMES, "time");
   seg($("loc"), LOCS, "loc");
   const box = $("terms");
@@ -217,18 +252,27 @@ function renderJobs() {
     const tags = document.createElement("div");
     tags.className = "tags";
     for (const t of j.terms) { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; tags.append(s); }
+    const srcs = document.createElement("div");
+    srcs.className = "srcs";
+    for (const [key, href] of Object.entries(j.links)) {
+      const s = document.createElement("a");
+      s.className = "src"; s.href = href; s.target = "_blank"; s.rel = "noopener";
+      s.textContent = SOURCE_NAME[key] || key;
+      srcs.append(s);
+    }
+    tags.prepend(srcs);
     li.append(h, when, meta, tags);
     ul.append(li);
   }
 }
 
-function renderDiag(terms) {
+function renderDiag(runs) {
   const ul = $("diag");
   ul.innerHTML = "";
-  for (const t of terms) {
+  for (const r of runs) {
     const li = document.createElement("li");
-    if (t.error) li.className = "err";
-    li.textContent = `${t.term}: ${t.count} vaga(s)${t.error ? " — " + t.error : ""}`;
+    if (r.error) li.className = "err";
+    li.textContent = `${SOURCE_NAME[r.source] || r.source} · ${r.term}: ${r.count} vaga(s)${r.error ? " — " + r.error : ""}`;
     ul.append(li);
   }
 }
@@ -237,9 +281,9 @@ async function search() {
   if (!state.terms.length) { setStatus("Adicione ao menos um termo.", true); return; }
   const go = $("go");
   go.disabled = true; go.textContent = "Buscando…";
-  setStatus(`Buscando ${state.terms.length} termos no LinkedIn…`);
+  setStatus(`Buscando ${state.terms.length} termos em ${state.sources.map(s => SOURCE_NAME[s]).join(", ")}…`);
   try {
-    const p = new URLSearchParams({ terms: state.terms.join("|"), location: state.loc, period: state.time });
+    const p = new URLSearchParams({ terms: state.terms.join("|"), sources: state.sources.join(","), loc: state.loc, period: state.time });
     const res = await fetch("/api/vagas?" + p);
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
@@ -247,12 +291,12 @@ async function search() {
     $("placeholder").hidden = true;
     $("results").hidden = false;
     renderJobs();
-    renderDiag(data.terms);
-    const failed = data.terms.filter(t => t.error).length;
+    renderDiag(data.runs);
+    const failed = data.runs.filter(r => r.error).length;
     const hora = new Date(data.fetchedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
     setStatus(failed
-      ? `Atualizado às ${hora}. ${failed} termo(s) falharam; veja "Resultado por termo".`
-      : `Atualizado às ${hora}.`, failed === data.terms.length);
+      ? `Atualizado às ${hora}. ${failed} busca(s) falharam; veja "Resultado por fonte e termo".`
+      : `Atualizado às ${hora}.`, failed === data.runs.length);
   } catch (e) {
     setStatus("Não foi possível buscar: " + e.message + ". Tente de novo em alguns minutos.", true);
   } finally {
@@ -263,9 +307,10 @@ async function search() {
 function setStatus(msg, err = false) { const s = $("status"); s.textContent = msg; s.classList.toggle("err", err); }
 
 function downloadCsv() {
-  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["salary", "Salário"], ["terms", "Termos"], ["url", "Link"]];
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
   const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
-  const rows = [cols.map(c => esc(c[1])).join(";"), ...state.jobs.map(j => cols.map(c => esc(j[c[0]])).join(";"))];
+  const row = j => ({ ...j, sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
+  const rows = [cols.map(c => esc(c[1])).join(";"), ...state.jobs.map(row).map(j => cols.map(c => esc(j[c[0]])).join(";"))];
   const blob = new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
