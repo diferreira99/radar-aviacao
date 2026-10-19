@@ -21,6 +21,8 @@ O nicho padrão é **aviação** (manutenção, planejamento, MRO, engenharia). 
 - `lib/enrich.js`: traduz o que cada fonte devolve para os mesmos rótulos de modelo de trabalho, contrato e nível.
 - `lib/relevance.js`: marca se a vaga é do nicho (pelo cargo ou pela empresa) e dá a nota para ordenar.
 
+A seção "Meu perfil x vagas" compara o currículo e o perfil do LinkedIn (o PDF que o próprio LinkedIn gera em "Salvar em PDF") com as 15 vagas mais importantes da lista: o que mais pedem e falta no perfil, o que a pessoa já tem, as vagas que mais combinam e um checklist do perfil. Os requisitos típicos de cada nicho e seus sinônimos ficam em `lib/niches.js`.
+
 A seção "Posts de recrutadores no LinkedIn" só monta links de busca de posts: quem abre é o navegador da pessoa, já logado, sem automação na conta.
 
 Além de cargo, empresa, cidade, data e link, cada vaga traz o que a fonte informar: modelo de trabalho, tipo de contrato, nível, salário, PcD, prazo de inscrição, logo e selos (como "Candidatura simplificada"). Ao abrir os detalhes, o anúncio completo acrescenta número de candidatos, nível, tipo de emprego, área e setor (LinkedIn), licenças, inglês e requisitos. No Indeed, se a busca com os campos extras for recusada, o site refaz a busca só com o básico.

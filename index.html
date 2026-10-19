@@ -116,7 +116,18 @@ details.box[open] summary::before { content: "▾ "; }
 .link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .link-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
 .link-list span { min-width: 0; overflow-wrap: break-word; flex: 1 1 40%; }
-.link-list span.bars { flex: 0 1 45%; overflow-wrap: normal; }
+.link-list span.analysis { display: grid; gap: 14px; }
+.analysis h4 { margin: 0; font-family: var(--display); font-size: 18px; font-weight: 600; }
+.gap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.gap-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; font-size: 14px; }
+.gap-bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--chip); overflow: hidden; }
+.gap-bar span { display: block; height: 100%; background: var(--accent); }
+.gap-list.good .gap-bar span { background: var(--good); }
+.gap-list .num { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.checklist { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 14px; }
+.checklist .ok::before { content: "✓ "; color: var(--good); font-weight: 700; }
+.checklist .todo::before { content: "✗ "; color: var(--bad); font-weight: 700; }
+.bars { flex: 0 1 45%; overflow-wrap: normal; }
 .link-list a, .link-list button.lnk { color: var(--link); font: inherit; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; padding: 0; }
 .bars { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
 .code { font-family: var(--mono); letter-spacing: .05em; }
@@ -195,6 +206,18 @@ details.diag li.err { color: var(--bad); }
       <span class="status" id="cv-info">O currículo fica salvo só neste aparelho; o arquivo é lido aqui mesmo e não é enviado para nenhum servidor.</span>
     </div>
     <div class="row">
+      <span class="label">Perfil do LinkedIn</span>
+      <input id="li-url" type="text" placeholder="https://www.linkedin.com/in/seu-perfil" aria-label="Link do seu perfil no LinkedIn" autocomplete="off">
+      <span class="status">O LinkedIn não deixa sites lerem perfis pelo link. Baixe o seu perfil em PDF: abra o seu perfil no LinkedIn (de preferência no computador), toque em <strong>Mais</strong> (ou <strong>Recursos</strong>) e depois em <strong>Salvar em PDF</strong>. Envie o arquivo aqui.</span>
+      <div class="actions">
+        <label class="ghost" for="li-file">Enviar perfil do LinkedIn (PDF)</label>
+        <input id="li-file" type="file" accept="application/pdf,.pdf" hidden>
+        <a class="ghost" id="li-open" href="#" target="_blank" rel="noopener" hidden>Abrir meu perfil ↗</a>
+        <button class="ghost" type="button" id="li-clear" hidden>Remover perfil</button>
+      </div>
+      <span class="status" id="li-info">Nenhum perfil enviado.</span>
+    </div>
+    <div class="row">
       <span class="label">Conectar na nuvem</span>
       <span class="status">Com um código, os status das vagas (vista, candidatei, entrevista, descartada) ficam guardados na nuvem: aparecem no celular e no computador, e entram no resumo de segunda no WhatsApp. Use o mesmo código em todos os seus aparelhos.</span>
       <form class="add" id="sync-form">
@@ -248,6 +271,16 @@ details.diag li.err { color: var(--bad); }
         <button class="ghost" id="csv" type="button">Baixar planilha (CSV)</button>
       </div>
     </div>
+
+    <details class="box" id="analysis-box">
+      <summary><span class="box-title">Meu perfil x vagas</span>
+        <span class="box-sub">Compara seu currículo e seu perfil do LinkedIn com as vagas mais importantes da lista e mostra o que melhorar.</span></summary>
+      <div class="actions">
+        <button class="go" id="analyze" type="button">Analisar meu perfil</button>
+        <span class="status" id="analysis-info"></span>
+      </div>
+      <div id="analysis" class="analysis"></div>
+    </details>
 
     <details class="box" id="companies-box">
       <summary><span class="box-title">Quem está contratando</span>
@@ -641,8 +674,11 @@ function keywordsOf(lines) {
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map(([w]) => w);
 }
+// Tudo o que se sabe da pessoa: texto do currículo + perfil do LinkedIn em PDF.
+function myText() { return normText($("cv").value + "\n" + (store.get("rav.profile", "") || "")); }
+
 function matchCv(d, j = {}) {
-  const cv = normText($("cv").value);
+  const cv = myText();
   if (cv.length < 40) return null;
   const asked = [
     ...d.licenses.map(l => ({ label: l, test: new RegExp(`\\b${normText(l).replace(/ /g, "[ -]?")}\\b`) })),
@@ -668,7 +704,7 @@ function matchCv(d, j = {}) {
 }
 
 // Lê o anúncio pela fonte mais fácil de abrir: LinkedIn, Gupy, Vagas.com.br e, por último, Indeed.
-async function loadDetails(j) {
+async function loadDetails(j, quiet = false) {
   const key = jobKey(j);
   if (state.details[key] && !state.details[key].error) return;
   state.details[key] = { loading: true };
@@ -683,12 +719,12 @@ async function loadDetails(j) {
       // O anúncio completo completa o que o card não trazia.
       for (const f of ["workplace", "contract", "level", "schedule"]) j[f] ||= data[f] || "";
       j.salary ||= data.salary || "";
-      renderJobs();
+      if (!quiet) renderJobs();
       return;
     } catch (e) { last = e.message; }
   }
   state.details[key] = { error: last };
-  renderJobs();
+  if (!quiet) renderJobs();
 }
 
 /* ---------- status e sincronização ---------- */
@@ -880,10 +916,7 @@ $("cv").oninput = () => { store.set("rav.cv", $("cv").value); };
 $("cv").onchange = () => { if (state.jobs.length) renderJobs(); };
 // Lê o PDF aqui mesmo com o pdf.js (o arquivo não sai do aparelho) e põe o texto no campo do currículo.
 const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/";
-async function readCvFile(file) {
-  const info = $("cv-file-info");
-  info.classList.remove("err");
-  try {
+async function extractText(file, info) {
     let content;
     if (/\.txt$/i.test(file.name) || file.type === "text/plain") {
       content = await file.text();
@@ -899,7 +932,14 @@ async function readCvFile(file) {
       }
       content = pages.join("\n");
     }
-    content = content.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    return content.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+async function readCvFile(file) {
+  const info = $("cv-file-info");
+  info.classList.remove("err");
+  try {
+    const content = await extractText(file, info);
     if (content.length < 40) {
       info.textContent = "Não achei texto nesse arquivo. Se o PDF for uma imagem escaneada, cole o texto no campo abaixo.";
       info.classList.add("err");
@@ -915,6 +955,155 @@ async function readCvFile(file) {
   }
 }
 $("cv-file").onchange = (e) => { const f = e.target.files?.[0]; if (f) readCvFile(f); e.target.value = ""; };
+
+function renderProfileInfo() {
+  const url = store.get("rav.linkedinUrl", "");
+  const profile = store.get("rav.profile", "");
+  $("li-url").value = url;
+  $("li-open").hidden = !/^https:\/\/([a-z]+\.)?linkedin\.com\/in\//.test(url);
+  $("li-open").href = url || "#";
+  $("li-clear").hidden = !profile;
+  $("li-info").classList.remove("err");
+  $("li-info").textContent = profile ? `Perfil do LinkedIn carregado: ${profile.split(/\s+/).length} palavras. Ele entra na comparação com as vagas.` : "Nenhum perfil enviado.";
+}
+$("li-url").onchange = () => { store.set("rav.linkedinUrl", $("li-url").value.trim()); renderProfileInfo(); };
+$("li-file").onchange = async (e) => {
+  const f = e.target.files?.[0];
+  e.target.value = "";
+  if (!f) return;
+  const info = $("li-info");
+  try {
+    const content = await extractText(f, info);
+    if (content.length < 40) throw new Error("não achei texto no PDF");
+    store.set("rav.profile", content);
+    renderProfileInfo();
+    if (state.jobs.length) renderJobs();
+  } catch (err) {
+    info.textContent = `Não deu para ler o PDF do perfil (${err.message}).`;
+    info.classList.add("err");
+  }
+};
+$("li-clear").onclick = () => { store.set("rav.profile", ""); renderProfileInfo(); if (state.jobs.length) renderJobs(); };
+renderProfileInfo();
+
+/* ---------- meu perfil x vagas ---------- */
+
+// Requisitos comuns a qualquer área; cada nicho soma os seus (lib/niches.js).
+const GENERIC_REQS = ["Excel", "Power BI", "SAP", "inglês", "espanhol", "CNH", "ensino superior", "curso técnico", "pacote Office", "NR-10", "NR-35", "AutoCAD", "liderança"];
+// Um requisito "está no perfil" se aparece igual, por um sinônimo, ou (com várias palavras)
+// se a maioria das palavras aparece: "Manutenção de Aeronaves" bate com "manutenção aeronáutica".
+function hasItem(item, mine, aliases = {}) {
+  const forms = [item, ...Object.entries(aliases).filter(([a, c]) => c === item).map(([a]) => a)];
+  if (forms.some(f => termRe(f).test(mine))) return true;
+  const words = normText(item).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !STOP.has(w)).map(w => w.slice(0, Math.max(4, w.length - 3)));
+  return words.length >= 2 && words.filter(w => mine.includes(w)).length * 2 >= words.length + 1;
+}
+const termRe = t => new RegExp(`(^|[^a-z0-9])${normText(t).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9])`);
+
+async function analyze() {
+  const mine = myText();
+  const out = $("analysis");
+  const info = $("analysis-info");
+  out.innerHTML = "";
+  if (mine.trim().length < 40) {
+    info.textContent = "Envie seu currículo ou o PDF do seu perfil do LinkedIn em \"Meu currículo e nuvem\" primeiro.";
+    return;
+  }
+  const jobs = visibleJobs().list.slice(0, 15);
+  if (!jobs.length) { info.textContent = "Busque vagas primeiro."; return; }
+  $("analyze").disabled = true;
+  let done = 0;
+  info.textContent = `Lendo os anúncios (0 de ${jobs.length})…`;
+  const queue = [...jobs];
+  await Promise.all([0, 1, 2].map(async () => {
+    while (queue.length) {
+      await loadDetails(queue.shift(), true);
+      info.textContent = `Lendo os anúncios (${++done} de ${jobs.length})…`;
+    }
+  }));
+  $("analyze").disabled = false;
+
+  const reqs = [...new Set([...(niche().requirements || []), ...GENERIC_REQS])];
+  const missing = new Map(), have = new Map();
+  const perJob = [];
+  let read = 0;
+  for (const j of jobs) {
+    const d = state.details[jobKey(j)];
+    const text = normText([j.title, d?.text, ...(d?.highlights || []), ...(j.skills || [])].join("\n"));
+    if (d && !d.error) read += 1;
+    const aliases = niche().aliases || {};
+    let found = [...reqs.filter(r => termRe(r).test(text)), ...(d?.licenses || []), ...(j.skills || []).slice(0, 8)]
+      .map(r => aliases[r] || r);
+    if (d?.english) found.push("inglês");
+    // "SAP" some quando "SAP PM" também foi pedido.
+    found = [...new Set(found)];
+    const asked = new Set(found.filter(r => !found.some(o => o !== r && termRe(r).test(normText(o)))));
+    let hits = 0;
+    for (const item of asked) {
+      const ok = hasItem(item, mine, aliases) || (item === "inglês" && /ingles|english/.test(mine));
+      const bucket = ok ? have : missing;
+      bucket.set(item, (bucket.get(item) || 0) + 1);
+      if (ok) hits += 1;
+    }
+    if (asked.size) perJob.push({ j, pct: Math.round((hits / asked.size) * 100), miss: [...asked].filter(a => !hasItem(a, mine, aliases) && !(a === "inglês" && /ingles|english/.test(mine))) });
+  }
+  info.textContent = `Analisei ${jobs.length} vagas (${read} com anúncio completo).`;
+
+  const section = (title) => { const h = document.createElement("h4"); h.textContent = title; out.append(h); };
+  const gapList = (entries, total, good = false) => {
+    const ul = document.createElement("ul"); ul.className = "gap-list" + (good ? " good" : "");
+    for (const [item, n] of entries) {
+      const li = document.createElement("li");
+      const name = document.createElement("span"); name.textContent = item;
+      const num = document.createElement("span"); num.className = "num"; num.textContent = `${n} de ${total} vagas`;
+      const bar = document.createElement("div"); bar.className = "gap-bar";
+      const fill = document.createElement("span"); fill.style.width = `${Math.round((n / total) * 100)}%`;
+      bar.append(fill); li.append(name, num, bar); ul.append(li);
+    }
+    out.append(ul);
+  };
+  const byCount = m => [...m.entries()].sort((a, b) => b[1] - a[1]);
+
+  section("O que mais pedem e não aparece no seu perfil");
+  const gaps = byCount(missing).slice(0, 10);
+  if (gaps.length) gapList(gaps, jobs.length);
+  else { const p = document.createElement("p"); p.className = "detail-note"; p.textContent = "Nada importante faltando. Seu perfil cobre o que essas vagas pedem."; out.append(p); }
+
+  const strengths = byCount(have).slice(0, 8);
+  if (strengths.length) { section("O que você já tem e as vagas pedem"); gapList(strengths, jobs.length, true); }
+
+  section("Vagas que mais combinam com você");
+  const best = document.createElement("ul"); best.className = "link-list";
+  for (const { j, pct, miss } of perJob.sort((a, b) => b.pct - a.pct).slice(0, 5)) {
+    const li = document.createElement("li");
+    const name = document.createElement("span"); name.textContent = `${j.title} · ${j.company || "Empresa não informada"}`;
+    const meta = document.createElement("span"); meta.className = "bars"; meta.textContent = `${pct}%${miss.length ? " · falta " + miss.slice(0, 3).join(", ") : ""}`;
+    const a = document.createElement("a"); a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Abrir ↗";
+    li.append(name, meta, a); best.append(li);
+  }
+  out.append(best);
+
+  const profile = normText(store.get("rav.profile", ""));
+  if (profile) {
+    section("Checklist do seu perfil do LinkedIn");
+    const area = state.terms.flatMap(t => normText(t).split(/\s+/)).filter(w => w.length >= 6).map(w => w.slice(0, 7));
+    const checks = [
+      [area.some(w => profile.slice(0, 400).includes(w)), "O título do perfil cita a área que você busca", "Coloque no título do perfil o cargo que você quer (ex.: \"Planejamento de Manutenção Aeronáutica | PCM | CTM\")."],
+      [/\b(resumo|summary|sobre)\b/.test(profile), "Tem resumo (Sobre)", "Escreva o \"Sobre\" contando sua experiência, licenças e o tipo de vaga que procura."],
+      [/(principais competencias|top skills|competencias)/.test(profile), "Lista competências", "Adicione pelo menos 5 competências, usando as palavras que as vagas pedem."],
+      [/(certifica|licenca|licenses)/.test(profile), "Tem licenças e certificações", "Inclua suas licenças e cursos (ANAC, CHT, habilitações, NRs) na seção de licenças e certificados."],
+      [/(idiomas|languages)/.test(profile), "Informa idiomas", "Adicione a seção de idiomas com o seu nível de inglês."],
+      [gaps.length === 0 || gaps.slice(0, 3).every(([g]) => hasItem(g, profile, niche().aliases || {})), "Cobre os 3 requisitos mais pedidos", `Se você tem, cite no perfil: ${gaps.slice(0, 3).map(([g]) => g).join(", ")}.`],
+    ];
+    const ul = document.createElement("ul"); ul.className = "checklist";
+    for (const [ok, good, todo] of checks) {
+      const li = document.createElement("li"); li.className = ok ? "ok" : "todo"; li.textContent = ok ? good : todo; ul.append(li);
+    }
+    out.append(ul);
+  }
+  renderJobs();
+}
+$("analyze").onclick = analyze;
 
 $("sync-code").value = state.syncCode;
 if (state.syncCode) setSyncInfo("Sincronizando…");
