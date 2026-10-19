@@ -241,6 +241,7 @@ details.diag li.err { color: var(--danger); }
 .star { flex: none; font-size: 1.35rem; line-height: 1; background: none; border: 0; padding: 0 2px; cursor: pointer; color: #b6bdcc; }
 .star:hover { color: #f59e0b; }
 .star[aria-pressed="true"] { color: #f59e0b; }
+.snippet { grid-column: 1 / -1; font-size: .82rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
 </head>
 <body>
@@ -307,6 +308,11 @@ details.diag li.err { color: var(--danger); }
         <div class="card-head"><h3 class="card-title">Melhores vagas para você</h3><span class="pill-muted" id="best-when">—</span></div>
         <ul class="link-list" id="best"></ul>
         <div class="actions"><button class="btn" type="button" data-nav="vagas">Ver todas as vagas →</button></div>
+      </div>
+      <div class="card" id="pay-card" hidden>
+        <div class="card-head"><h3 class="card-title">Salários na lista</h3><span class="pill-muted" id="pay-pill">—</span></div>
+        <p class="card-sub" id="pay-sub"></p>
+        <ul class="link-list" id="pay"></ul>
       </div>
       <div class="card" id="soon-card" hidden>
         <div class="card-head"><h3 class="card-title">Encerram em breve</h3><span class="pill-muted">próximos 7 dias</span></div>
@@ -720,7 +726,8 @@ function renderCompanies(list) {
   const counts = new Map();
   for (const j of list) {
     if (!j.company) continue;
-    const c = counts.get(j.company) || { total: 0, top: 0 };
+    const c = counts.get(j.company) || { total: 0, top: 0, url: "" };
+    c.url ||= j.companyUrl || "";
     c.total += 1; if ((j.score ?? 0) >= 2) c.top += 1;
     counts.set(j.company, c);
   }
@@ -736,7 +743,9 @@ function renderCompanies(list) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "lnk"; b.textContent = "Filtrar";
     b.onclick = () => { $("filter").value = company; renderJobs(); navigate("vagas"); };
-    li.append(name, bars, b);
+    li.append(name, bars);
+    if (c.url) { const a = document.createElement("a"); a.href = c.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Carreiras ↗"; li.append(a); }
+    li.append(b);
     ul.append(li);
   }
   $("companies-box").hidden = !top.length;
@@ -786,6 +795,37 @@ function quickBtn(j, key, value, label, onLabel) {
 function filtersActive() {
   return Boolean($("filter").value.trim() || $("level").value || $("workplace").value || $("contract").value ||
     $("only-salary").checked || $("only-pcd").checked || $("only-new").checked || $("only-fav").checked);
+}
+
+const brl = n => `R$ ${Math.round(n).toLocaleString("pt-BR")}`;
+// Só salários mensais em reais (ignora hora, dia, semana e ano) para os números ficarem comparáveis.
+function salaryMonthly(j) {
+  const t = j.salary || "";
+  if (!t || /\/(hora|dia|semana|ano)|estimad/.test(t)) return null;
+  const nums = [...t.matchAll(/R\$\s*([\d.]+(?:,\d+)?)/g)].map(m => parseFloat(m[1].replace(/\./g, "").replace(",", "."))).filter(n => n >= 500);
+  return nums.length ? { min: Math.min(...nums), max: Math.max(...nums) } : null;
+}
+
+function renderPay(list) {
+  const rows = list.map(j => ({ j, v: salaryMonthly(j) })).filter(r => r.v);
+  $("pay-card").hidden = !rows.length;
+  if (!rows.length) return;
+  const mids = rows.map(r => (r.v.min + r.v.max) / 2).sort((a, b) => a - b);
+  const median = mids.length % 2 ? mids[(mids.length - 1) / 2] : (mids[mids.length / 2 - 1] + mids[mids.length / 2]) / 2;
+  const lo = Math.min(...rows.map(r => r.v.min)), hi = Math.max(...rows.map(r => r.v.max));
+  $("pay-pill").textContent = `${rows.length} de ${list.length} vagas`;
+  $("pay-sub").textContent = `Mediana ${brl(median)}/mês · de ${brl(lo)} a ${brl(hi)}. Só entram salários mensais publicados pela empresa (estimativas ficam de fora).`;
+  const ul = $("pay");
+  ul.innerHTML = "";
+  for (const { j, v } of rows.sort((a, b) => b.v.max - a.v.max).slice(0, 5)) {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    const b = document.createElement("strong"); b.textContent = j.title;
+    name.append(b, ` · ${j.company || "Empresa não informada"}`);
+    const meta = document.createElement("span"); meta.className = "bars"; meta.textContent = j.salary;
+    const a = document.createElement("a"); a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Abrir ↗";
+    li.append(name, meta, a); ul.append(li);
+  }
 }
 
 function renderSoon() {
@@ -933,7 +973,8 @@ function jobCard(j) {
   const left = daysUntil(j.deadline);
   if (left <= 5) pill(left <= 0 ? "Encerra hoje" : `Encerra em ${left} dia${left === 1 ? "" : "s"}`, "soon");
   else if (j.deadline) pill(`Inscrições até ${fmtDate(j.deadline)}`);
-  for (const b of (j.badges || []).filter(b => /simplificad|primeiros|easy apply|early/i.test(b))) pill(b, "perk");
+  for (const b of (j.badges || []).filter(b => /simplificad|primeiros|easy apply|early|banco de talentos/i.test(b))) pill(b, "perk");
+  for (const b of (j.benefits || []).slice(0, 3)) pill(b, "perk");
   const srcs = document.createElement("div");
   srcs.className = "srcs";
   for (const [src, href] of Object.entries(j.links)) {
@@ -959,7 +1000,9 @@ function jobCard(j) {
   bar.append(toggle);
   if (st !== "entrevista") bar.append(quickBtn(j, key, "candidatei", "Candidatei", "✓ Candidatei"));
   bar.append(quickBtn(j, key, "descartada", "Descartar", "Descartada"));
-  li.append(head, when, meta, tags, bar);
+  li.append(head, when, meta);
+  if (j.snippet) { const sn = document.createElement("div"); sn.className = "snippet"; sn.textContent = j.snippet; li.append(sn); }
+  li.append(tags, bar);
   if (isOpen) li.append(detailPanel(j, key));
   return li;
 }
@@ -1585,6 +1628,7 @@ function renderDashboard() {
   }
   const last = store.get(`rav.last.${state.niche}`, null);
   renderSoon();
+  renderPay(list);
   renderTrack();
   $("best-when").textContent = last?.fetchedAt ? `busca de ${new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "—";
 }
