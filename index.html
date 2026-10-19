@@ -538,6 +538,7 @@ function jobCard(j) {
   const pill = (label, cls = "") => { const p = document.createElement("span"); p.className = `pill ${cls}`; p.textContent = label; tags.append(p); };
   if (j.workplace) pill(j.workplace);
   if (j.contract) pill(j.contract);
+  if (j.schedule) pill(j.schedule);
   if (j.pcd) pill("PcD", "pcd");
   const left = daysUntil(j.deadline);
   if (left <= 5) pill(left <= 0 ? "Encerra hoje" : `Encerra em ${left} dia${left === 1 ? "" : "s"}`, "soon");
@@ -594,7 +595,15 @@ function detailPanel(j, key) {
     const f = document.createElement("span"); f.className = "fact"; f.textContent = v; facts.append(f);
   }
   if (facts.childElementCount) box.append(facts);
-  const m = matchCv(d);
+  const lists = [["Benefícios", j.benefits], ["Competências pedidas", j.skills]].filter(([, v]) => v?.length);
+  for (const [label, items] of lists) {
+    const p = document.createElement("div");
+    p.className = "detail-note";
+    const b = document.createElement("strong"); b.textContent = `${label}: `;
+    p.append(b, items.join(" · "));
+    box.append(p);
+  }
+  const m = matchCv(d, j);
   if (m) box.append(m);
   if (d.highlights.length) {
     const ul = document.createElement("ul");
@@ -621,13 +630,18 @@ function keywordsOf(lines) {
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map(([w]) => w);
 }
-function matchCv(d) {
+function matchCv(d, j = {}) {
   const cv = normText($("cv").value);
   if (cv.length < 40) return null;
   const asked = [
     ...d.licenses.map(l => ({ label: l, test: new RegExp(`\\b${normText(l).replace(/ /g, "[ -]?")}\\b`) })),
     ...(d.english ? [{ label: d.english, test: /ingles|english/ }] : []),
-    ...keywordsOf(d.highlights).map(w => ({ label: w, test: new RegExp(`\\b${w.slice(0, Math.max(4, w.length - 2))}`) }))
+    ...keywordsOf(d.highlights).map(w => ({ label: w, test: new RegExp(`\\b${w.slice(0, Math.max(4, w.length - 2))}`) })),
+    // Competências que a própria fonte lista (Indeed): conta se a maioria das palavras aparece no currículo.
+    ...(j.skills || []).slice(0, 10).map(skill => {
+      const words = normText(skill).split(/[^a-z0-9]+/).filter(w => w.length >= 4 && !STOP.has(w)).map(w => w.slice(0, Math.max(4, w.length - 2)));
+      return { label: skill, test: { test: cv => words.length > 0 && words.filter(w => cv.includes(w)).length * 2 >= words.length } };
+    })
   ];
   if (!asked.length) return null;
   const hit = asked.filter(a => a.test.test(cv));
@@ -656,7 +670,7 @@ async function loadDetails(j) {
       if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
       state.details[key] = data;
       // O anúncio completo completa o que o card não trazia.
-      for (const f of ["workplace", "contract", "level"]) j[f] ||= data[f] || "";
+      for (const f of ["workplace", "contract", "level", "schedule"]) j[f] ||= data[f] || "";
       j.salary ||= data.salary || "";
       renderJobs();
       return;
@@ -712,7 +726,8 @@ function mergeJobs(target, incoming) {
     for (const t of job.terms) if (!seen.terms.includes(t)) seen.terms.push(t);
     for (const [src, href] of Object.entries(job.links)) seen.links[src] ??= href;
     if ((job.date || "") > (seen.date || "")) seen.date = job.date;
-    for (const f of ["salary", "workplace", "contract", "level", "deadline", "logo", "companyUrl", "snippet"]) seen[f] ||= job[f];
+    for (const f of ["salary", "workplace", "contract", "level", "schedule", "deadline", "logo", "companyUrl", "snippet"]) seen[f] ||= job[f];
+    for (const f of ["benefits", "skills"]) seen[f] = [...new Set([...(seen[f] || []), ...(job[f] || [])])];
     seen.pcd ||= job.pcd;
     seen.badges = [...new Set([...(seen.badges || []), ...(job.badges || [])])];
   }
@@ -816,7 +831,7 @@ function setStatus(msg, err = false) { const s = $("status"); s.textContent = ms
 
 function downloadCsv() {
   const cats = niche().categories;
-  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["level", "Nível"], ["workplace", "Modelo"], ["contract", "Contrato"], ["pcd", "PcD"], ["deadline", "Inscrições até"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["level", "Nível"], ["workplace", "Modelo"], ["contract", "Contrato"], ["schedule", "Jornada"], ["benefits", "Benefícios"], ["pcd", "PcD"], ["deadline", "Inscrições até"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
   const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
   const row = j => ({ ...j, category: cats[j.score] || "", level: $("level").querySelector(`option[value="${jobLevel(j)}"]`)?.textContent || "", pcd: j.pcd ? "Sim" : "", deadline: fmtDate(j.deadline),
     status: STATUS_NAME[state.status[jobKey(j)]] || "", sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
