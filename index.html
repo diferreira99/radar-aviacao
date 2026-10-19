@@ -236,7 +236,7 @@ details.diag li.err { color: var(--bad); }
           <option value="Trainee">Trainee</option>
           <option value="Aprendiz">Aprendiz</option>
         </select>
-        <label class="check"><input id="only-pcd" type="checkbox"> Só vagas PcD</label>
+        <label class="check"><input id="only-pcd" type="checkbox"> Só vagas que aceitam PcD</label>
         <label class="check"><input id="only-niche" type="checkbox" checked> <span id="only-niche-label">Só vagas do nicho</span></label>
         <label class="check"><input id="only-salary" type="checkbox"> Só com salário</label>
         <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
@@ -539,7 +539,7 @@ function jobCard(j) {
   if (j.workplace) pill(j.workplace);
   if (j.contract) pill(j.contract);
   if (j.schedule) pill(j.schedule);
-  if (j.pcd) pill("PcD", "pcd");
+  if (j.pcd) pill("Aceita PcD", "pcd");
   const left = daysUntil(j.deadline);
   if (left <= 5) pill(left <= 0 ? "Encerra hoje" : `Encerra em ${left} dia${left === 1 ? "" : "s"}`, "soon");
   else if (j.deadline) pill(`Inscrições até ${fmtDate(j.deadline)}`);
@@ -831,7 +831,7 @@ function setStatus(msg, err = false) { const s = $("status"); s.textContent = ms
 
 function downloadCsv() {
   const cats = niche().categories;
-  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["level", "Nível"], ["workplace", "Modelo"], ["contract", "Contrato"], ["schedule", "Jornada"], ["benefits", "Benefícios"], ["pcd", "PcD"], ["deadline", "Inscrições até"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["level", "Nível"], ["workplace", "Modelo"], ["contract", "Contrato"], ["schedule", "Jornada"], ["benefits", "Benefícios"], ["pcd", "Aceita PcD"], ["deadline", "Inscrições até"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
   const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
   const row = j => ({ ...j, category: cats[j.score] || "", level: $("level").querySelector(`option[value="${jobLevel(j)}"]`)?.textContent || "", pcd: j.pcd ? "Sim" : "", deadline: fmtDate(j.deadline),
     status: STATUS_NAME[state.status[jobKey(j)]] || "", sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
