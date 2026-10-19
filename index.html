@@ -84,6 +84,19 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .badge-status { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
 .job.st-descartada { opacity: .55; }
 select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
+.posts { gap: 12px; }
+.posts summary { cursor: pointer; display: block; list-style: none; }
+.posts summary::-webkit-details-marker { display: none; }
+.posts summary::before { content: "▸ "; color: var(--muted); }
+.posts[open] summary::before { content: "▾ "; }
+.posts-title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: .02em; display: inline; }
+.posts-sub { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
+.combo-post { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+a.go { text-decoration: none; display: inline-block; }
+.post-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.post-links li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
+.post-links span { min-width: 0; overflow-wrap: anywhere; }
+.post-links a { color: var(--link); font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
 .hidden-note { color: var(--muted); font-size: 14px; font-family: var(--body); font-weight: 400; margin-left: 8px; }
 .srcs { display: flex; flex-wrap: wrap; gap: 4px; }
 .src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none;
@@ -133,6 +146,16 @@ details.diag li.err { color: var(--bad); }
       <span class="status" id="status" role="status"></span>
     </div>
   </section>
+
+  <details class="panel posts" id="posts">
+    <summary><span class="posts-title">Posts de recrutadores no LinkedIn</span>
+      <span class="posts-sub">Abre a busca de posts no seu navegador, já logado. Nada é feito em seu nome.</span></summary>
+    <div class="combo-post">
+      <a class="go" id="posts-all" href="#" target="_blank" rel="noopener">Ver todos os posts ↗</a>
+      <span class="status" id="posts-info"></span>
+    </div>
+    <ul class="post-links" id="post-links"></ul>
+  </details>
 
   <section class="row" aria-label="Resultados" id="results" hidden>
     <div class="toolbar">
@@ -236,7 +259,32 @@ function seg(el, items, key) {
   }
 }
 
+// Busca de posts do LinkedIn (exige login): só monta os links; quem abre é o navegador da pessoa.
+const POST_DATE = { "24h": "past-24h", week: "past-week", month: "past-month", any: "" };
+const POST_PERIOD = { "24h": "das últimas 24 horas", week: "dos últimos 7 dias", month: "dos últimos 30 dias", any: "de qualquer data" };
+const quote = t => /\s/.test(t) ? `"${t}"` : t;
+function postsUrl(keywords) {
+  const p = new URLSearchParams({ keywords, sortBy: '"date_posted"' });
+  if (POST_DATE[state.time]) p.set("datePosted", `"${POST_DATE[state.time]}"`);
+  return "https://www.linkedin.com/search/results/content/?" + p;
+}
+function renderPosts() {
+  const hiring = "(vaga OR vagas OR contratando OR oportunidade)";
+  $("posts-all").href = postsUrl(`${hiring} AND (${state.terms.map(quote).join(" OR ")})`);
+  $("posts-info").textContent = `Posts ${POST_PERIOD[state.time]}, mais recentes primeiro.`;
+  const ul = $("post-links");
+  ul.innerHTML = "";
+  for (const t of state.terms) {
+    const li = document.createElement("li");
+    const label = document.createElement("span"); label.textContent = t;
+    const a = document.createElement("a");
+    a.href = postsUrl(`${hiring} ${quote(t)}`); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Posts ↗";
+    li.append(label, a); ul.append(li);
+  }
+}
+
 function renderFilters() {
+  renderPosts();
   sourceToggles();
   seg($("time"), TIMES, "time");
   seg($("loc"), LOCS, "loc");

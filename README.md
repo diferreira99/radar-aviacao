@@ -22,6 +22,8 @@ Busca vagas de aviação (manutenção, planejamento, MRO, engenharia e afins) n
 - `period`: `24h`, `week`, `month` ou `any`
 - `pages`: páginas de cerca de 10 vagas por termo (1 a 6, padrão 3)
 
+A seção "Posts de recrutadores no LinkedIn" só monta links de busca de posts: quem abre é o navegador da pessoa, já logado, sem automação na conta.
+
 No navegador ficam guardados os filtros, a última busca, as vagas já vistas (para marcar as novas) e o status de cada vaga (vista, candidatei, entrevista, descartada).
 
 ## Rodar os testes
