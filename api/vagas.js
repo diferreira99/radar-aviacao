@@ -4,7 +4,8 @@ import * as gupy from "../lib/sources/gupy.js";
 import * as vagas from "../lib/sources/vagas.js";
 import { LOCATIONS } from "../lib/locations.js";
 import { norm } from "../lib/util.js";
-import { isAviation, score } from "../lib/relevance.js";
+import { isRelevant, score } from "../lib/relevance.js";
+import { NICHES, DEFAULT_NICHE } from "../lib/niches.js";
 
 const SOURCES = { linkedin, indeed, gupy, vagas };
 const MAX_TERMS = 15;
@@ -19,7 +20,7 @@ function decodeTerm(t) {
   }
 }
 
-// GET /api/vagas?sources=linkedin,indeed,gupy,vagas&terms=a|b|c&loc=sp&period=week&pages=3[&debug=1]
+// GET /api/vagas?sources=linkedin,indeed,gupy,vagas&terms=a|b|c&loc=sp&period=week&pages=3&niche=aviacao[&debug=1]
 export default async function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const terms = (url.searchParams.get("terms") ?? "")
@@ -41,6 +42,7 @@ export default async function handler(req, res) {
   const period = url.searchParams.get("period") ?? "week";
   const pages = Math.min(Math.max(Number(url.searchParams.get("pages")) || 3, 1), 6);
   const debug = url.searchParams.get("debug") === "1";
+  const niche = NICHES[url.searchParams.get("niche")] ? url.searchParams.get("niche") : DEFAULT_NICHE;
 
   const tasks = sources.flatMap((source) => terms.map((term) => ({ source, term })));
   const results = [];
@@ -62,7 +64,9 @@ export default async function handler(req, res) {
       const key = `${norm(job.title)}|${norm(job.company)}`;
       const seen = merged.get(key);
       if (!seen) {
-        merged.set(key, { ...job, aviation: isAviation(job), score: score(job), terms: [r.term], links: { [r.source]: job.url } });
+        const relevant = isRelevant(job, niche);
+        // "aviation" fica como sinônimo de "relevant" para quem já usa a API (alerta do n8n).
+        merged.set(key, { ...job, relevant, aviation: relevant, score: score(job, niche), terms: [r.term], links: { [r.source]: job.url } });
         continue;
       }
       if (!seen.terms.includes(r.term)) seen.terms.push(r.term);
@@ -77,6 +81,7 @@ export default async function handler(req, res) {
   res.status(200).json({
     fetchedAt: new Date().toISOString(),
     loc: locKey,
+    niche,
     jobs,
     runs: results.map((r) => ({
       source: r.source,

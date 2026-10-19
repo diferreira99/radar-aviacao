@@ -2,15 +2,22 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Radar Aviação SP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radar Emprego Novo</title>
+<meta name="description" content="Vagas do LinkedIn, Indeed, Gupy e Vagas.com.br numa lista só, com alerta de vaga nova.">
+<meta name="theme-color" content="#e0a100">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Radar Emprego">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 :root {
   --bg: #eef1f4; --panel: #ffffff; --fg: #16202b; --muted: #5b6876; --line: #d3dae2;
-  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #e4e9ef; --bad: #b3261e;
+  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #e4e9ef; --bad: #b3261e; --good: #1d7a3e;
   --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -19,14 +26,15 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0f151c; --panel: #17202a; --fg: #e6ecf2; --muted: #93a1b0; --line: #2a3644;
-    --accent: #f2b928; --link: #7db8f5; --chip: #222d3a; --bad: #f2928b; color-scheme: dark;
+    --accent: #f2b928; --link: #7db8f5; --chip: #222d3a; --bad: #f2928b; --good: #7fd49b; color-scheme: dark;
   }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
-  padding: 28px max(16px, env(safe-area-inset-left)) 56px; }
-.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+  padding: max(28px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 56px max(16px, env(safe-area-inset-left)); }
+[hidden] { display: none !important; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .eyebrow, .label { font-family: var(--mono); font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
 h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 7vw, 52px); line-height: 1; margin: 4px 0 6px; }
 h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .18em; }
@@ -36,37 +44,51 @@ h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .18em;
 .seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .seg button, .chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.icao { font-family: var(--mono); font-size: 11px; opacity: .75; margin-left: 6px; }
 .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; }
 .chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
 .terms { display: flex; flex-wrap: wrap; gap: 6px; }
 form.add { display: flex; gap: 8px; flex-wrap: wrap; }
-input[type="text"], input[type="search"] { flex: 1 1 220px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
+input[type="text"], input[type="search"], textarea { flex: 1 1 220px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
+textarea { width: 100%; min-height: 140px; resize: vertical; }
 .ghost { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
 .go { font: inherit; font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 4px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .go:disabled { opacity: .6; cursor: progress; }
+a.go { text-decoration: none; display: inline-block; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .status { color: var(--muted); font-size: 14px; }
 .status.err { color: var(--bad); }
-.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.progress { display: flex; flex-wrap: wrap; gap: 6px; }
+.progress span { font-family: var(--mono); font-size: 12px; border: 1px solid var(--line); border-radius: 3px; padding: 1px 8px; color: var(--muted); }
+.progress .done { color: var(--good); border-color: var(--good); }
+.progress .fail { color: var(--bad); border-color: var(--bad); }
+.toolbar { display: grid; gap: 10px; }
 .count { font-family: var(--display); font-size: 24px; font-weight: 600; }
+.hidden-note { color: var(--muted); font-size: 14px; font-family: var(--body); font-weight: 400; margin-left: 8px; }
+select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
+.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.check input { width: 16px; height: 16px; accent-color: var(--accent); }
 .jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .job { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
-.job.new { border-left: 5px solid var(--accent); }
+.job.recent { border-left: 5px solid var(--accent); }
+.job.st-descartada { opacity: .55; }
 .job h3 { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .job h3 a { color: var(--fg); text-decoration: none; }
 .job h3 a:hover { color: var(--link); text-decoration: underline; }
 .meta { color: var(--muted); font-size: 14px; min-width: 0; }
 .meta strong { color: var(--fg); font-weight: 500; }
-.when { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; grid-row: 1 / span 2; grid-column: 2; }
-.tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.tag { font-size: 12px; background: var(--chip); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
 .salary { color: var(--fg); font-weight: 500; }
-.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; cursor: pointer; white-space: nowrap; }
-.check input { width: 16px; height: 16px; accent-color: var(--accent); }
-.job { cursor: default; }
-.job-head { display: contents; }
+.when { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; white-space: pre-line; grid-row: 1 / span 2; grid-column: 2; }
+.tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; align-items: center; }
+.tag { font-size: 12px; background: var(--chip); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+.srcs { display: flex; flex-wrap: wrap; gap: 4px; }
+.src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; color: var(--link); }
+.src:hover { border-color: var(--link); }
+.cat { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 1px 6px; }
+.cat-3 { background: var(--accent); color: var(--accent-ink); }
+.cat-2 { background: var(--chip); color: var(--fg); }
+.badge-new { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 3px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
+.badge-status { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
 .toggle { grid-column: 1 / -1; justify-self: start; font: inherit; font-size: 13px; color: var(--link); background: none; border: 0; padding: 4px 0; cursor: pointer; }
 .panel-detail { grid-column: 1 / -1; display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 10px; margin-top: 6px; }
 .status-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -77,31 +99,25 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid 
 .fact.lic { border: 1px solid var(--accent); background: transparent; font-weight: 600; }
 .highlights { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
 .detail-note { color: var(--muted); font-size: 13px; }
-.cat { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; border-radius: 3px; padding: 1px 6px; }
-.cat-3 { background: var(--accent); color: var(--accent-ink); }
-.cat-2 { background: var(--chip); color: var(--fg); }
-.badge-new { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 3px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
-.badge-status { font-size: 12px; color: var(--muted); margin-left: 6px; font-weight: 400; }
-.job.st-descartada { opacity: .55; }
-select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
-.posts { gap: 12px; }
-.posts summary { cursor: pointer; display: block; list-style: none; }
-.posts summary::-webkit-details-marker { display: none; }
-.posts summary::before { content: "▸ "; color: var(--muted); }
-.posts[open] summary::before { content: "▾ "; }
-.posts-title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: .02em; display: inline; }
-.posts-sub { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
-.combo-post { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-a.go { text-decoration: none; display: inline-block; }
-.post-links { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-.post-links li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
-.post-links span { min-width: 0; overflow-wrap: anywhere; }
-.post-links a { color: var(--link); font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; }
-.hidden-note { color: var(--muted); font-size: 14px; font-family: var(--body); font-weight: 400; margin-left: 8px; }
-.srcs { display: flex; flex-wrap: wrap; gap: 4px; }
-.src { font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; text-decoration: none;
-  border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; color: var(--link); }
-.src:hover { border-color: var(--link); }
+.match { font-size: 14px; display: grid; gap: 4px; }
+.match strong { font-family: var(--display); font-size: 18px; }
+.match .miss { color: var(--bad); }
+.match .hit { color: var(--good); }
+details.box { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 18px; }
+details.box[open] { display: grid; gap: 12px; }
+details.box summary { cursor: pointer; list-style: none; }
+details.box summary::-webkit-details-marker { display: none; }
+details.box summary::before { content: "▸ "; color: var(--muted); }
+details.box[open] summary::before { content: "▾ "; }
+.box-title { font-family: var(--display); font-weight: 600; font-size: 20px; letter-spacing: .02em; }
+.box-sub { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
+.link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.link-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
+.link-list span { min-width: 0; overflow-wrap: break-word; flex: 1 1 auto; }
+.link-list span.bars { flex: 0 1 auto; }
+.link-list a, .link-list button.lnk { color: var(--link); font: inherit; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; padding: 0; }
+.bars { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
+.code { font-family: var(--mono); letter-spacing: .05em; }
 .empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1px dashed var(--line); border-radius: 6px; }
 details.diag { font-size: 13px; color: var(--muted); }
 details.diag li.err { color: var(--bad); }
@@ -109,17 +125,22 @@ details.diag li.err { color: var(--bad); }
   .job { grid-template-columns: 1fr; }
   .when { grid-row: auto; grid-column: auto; text-align: left; }
 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="eyebrow">LinkedIn · Indeed · Gupy · Vagas.com.br</div>
-    <h1>Radar <span>Aviação SP</span></h1>
-    <p class="lede">Busca vagas de manutenção, planejamento e de todo o setor de aviação nos principais sites de emprego, junta os resultados e remove as repetidas.</p>
+    <h1>Radar <span>Emprego Novo</span></h1>
+    <p class="lede">As vagas dos principais sites de emprego numa lista só, sem repetidas, com as mais importantes para você no topo.</p>
   </header>
 
   <section class="panel" aria-label="Filtros">
+    <div class="row">
+      <span class="label" id="lbl-niche">Nicho</span>
+      <div class="seg" role="group" aria-labelledby="lbl-niche" id="niche"></div>
+    </div>
     <div class="row">
       <span class="label" id="lbl-src">Fontes</span>
       <div class="seg" role="group" aria-labelledby="lbl-src" id="src"></div>
@@ -136,25 +157,45 @@ details.diag li.err { color: var(--bad); }
       <span class="label">Termos</span>
       <div class="terms" id="terms"></div>
       <form class="add" id="add-form">
-        <input id="add-input" type="text" placeholder="Adicionar termo, ex.: inspetor de qualidade aeronáutica" aria-label="Novo termo">
+        <input id="add-input" type="text" placeholder="Adicionar termo, ex.: inspetor de qualidade" aria-label="Novo termo">
         <button class="ghost" type="submit">Adicionar</button>
-        <button class="ghost" type="button" id="reset">Lista padrão</button>
+        <button class="ghost" type="button" id="reset">Termos padrão</button>
       </form>
     </div>
     <div class="actions">
       <button class="go" id="go" type="button">Buscar vagas</button>
       <span class="status" id="status" role="status"></span>
     </div>
+    <div class="progress" id="progress" aria-live="polite"></div>
   </section>
 
-  <details class="panel posts" id="posts">
-    <summary><span class="posts-title">Posts de recrutadores no LinkedIn</span>
-      <span class="posts-sub">Abre a busca de posts no seu navegador, já logado. Nada é feito em seu nome.</span></summary>
-    <div class="combo-post">
+  <details class="box" id="posts">
+    <summary><span class="box-title">Posts de recrutadores no LinkedIn</span>
+      <span class="box-sub">Abre a busca de posts no seu navegador, já logado. Nada é feito em seu nome.</span></summary>
+    <div class="actions">
       <a class="go" id="posts-all" href="#" target="_blank" rel="noopener">Ver todos os posts ↗</a>
       <span class="status" id="posts-info"></span>
     </div>
-    <ul class="post-links" id="post-links"></ul>
+    <ul class="link-list" id="post-links"></ul>
+  </details>
+
+  <details class="box" id="me">
+    <summary><span class="box-title">Meu currículo e sincronização</span>
+      <span class="box-sub">Cole seu currículo para ver o quanto cada vaga combina com você. Use um código para ver seus status no celular e no computador.</span></summary>
+    <div class="row">
+      <label class="label" for="cv">Currículo (texto)</label>
+      <textarea id="cv" placeholder="Cole aqui o texto do seu currículo: cursos, licenças, experiências, idiomas…"></textarea>
+      <span class="status" id="cv-info">Fica salvo só neste aparelho.</span>
+    </div>
+    <div class="row">
+      <span class="label">Código de sincronização</span>
+      <form class="add" id="sync-form">
+        <input id="sync-code" class="code" type="text" placeholder="Ex.: radar-7k2m9x4q" aria-label="Código de sincronização" autocomplete="off">
+        <button class="ghost" type="submit">Usar este código</button>
+        <button class="ghost" type="button" id="sync-new">Gerar código novo</button>
+      </form>
+      <span class="status" id="sync-info">Sem código, os status ficam só neste aparelho.</span>
+    </div>
   </details>
 
   <section class="row" aria-label="Resultados" id="results" hidden>
@@ -162,44 +203,56 @@ details.diag li.err { color: var(--bad); }
       <span class="count" id="count"></span>
       <div class="actions">
         <select id="sort" aria-label="Ordenar">
-          <option value="score">Planejamento primeiro</option>
+          <option value="score">Mais importantes primeiro</option>
           <option value="date">Mais recentes</option>
         </select>
-        <label class="check"><input id="only-aviation" type="checkbox" checked> Só vagas de aviação</label>
+        <select id="level" aria-label="Nível">
+          <option value="">Todos os níveis</option>
+          <option value="estagio">Estágio</option>
+          <option value="trainee">Trainee</option>
+          <option value="junior">Júnior</option>
+          <option value="pleno">Pleno</option>
+          <option value="senior">Sênior / especialista</option>
+          <option value="lideranca">Liderança</option>
+        </select>
+        <label class="check"><input id="only-niche" type="checkbox" checked> <span id="only-niche-label">Só vagas do nicho</span></label>
+        <label class="check"><input id="only-salary" type="checkbox"> Só com salário</label>
         <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
+      </div>
+      <div class="actions">
         <input id="filter" type="search" placeholder="Filtrar por cargo, empresa ou cidade" aria-label="Filtrar resultados">
         <button class="ghost" id="csv" type="button">Baixar planilha (CSV)</button>
       </div>
     </div>
+
+    <details class="box" id="companies-box">
+      <summary><span class="box-title">Quem está contratando</span>
+        <span class="box-sub">Empresas com mais vagas na lista atual. Toque numa empresa para filtrar.</span></summary>
+      <ul class="link-list" id="companies"></ul>
+    </details>
+
     <ul class="jobs" id="jobs"></ul>
     <details class="diag"><summary>Resultado por fonte e termo</summary><ul id="diag"></ul></details>
   </section>
 
-  <div class="empty" id="placeholder">Escolha o período e a região e toque em <strong>Buscar vagas</strong>. A busca leva de 20 a 50 segundos.</div>
+  <div class="empty" id="placeholder">Escolha o nicho, o período e a região e toque em <strong>Buscar vagas</strong>. As vagas aparecem conforme cada site responde.</div>
 </div>
 
 <script>
-const DEFAULT_TERMS = [
-  "planejador de manutenção aeronáutica", "planejamento e controle de manutenção aeronaves", "PCM aviação",
-  "controle técnico de manutenção", "engenharia de manutenção aeronáutica", "manutenção de aeronaves",
-  "mecânico de aeronaves", "MRO aviação", "aeronavegabilidade", "aviação", "aeronáutica"
-];
+// Nichos vêm de /api/nichos; este é o padrão caso a rota não responda.
+let NICHES = {
+  aviacao: { label: "Aviação", terms: ["planejador de manutenção aeronáutica", "manutenção de aeronaves", "mecânico de aeronaves", "aviação"],
+    categories: { 3: "Planejamento", 2: "Manutenção", 1: "Setor aéreo" }, filters: true, outside: "fora do setor" },
+  livre: { label: "Livre", terms: [], categories: { 3: "", 2: "", 1: "" }, filters: false, outside: "" }
+};
 const TIMES = [["24h", "24 horas"], ["week", "7 dias"], ["month", "30 dias"], ["any", "Qualquer data"]];
 const LOCS = [
-  ["sp", "São Paulo", "SBSP"],
-  ["gru", "Guarulhos", "SBGR"],
-  ["cps", "Campinas", "SBKP"],
-  ["sjc", "S. J. dos Campos", "SBSJ"],
-  ["jun", "Jundiaí", "SBJD"],
-  ["sor", "Sorocaba", "SDCO"],
-  ["bau", "Bauru", "SBAE"],
-  ["tau", "Taubaté", "SBTA"],
-  ["estado", "Estado de SP", ""],
-  ["br", "Brasil todo", ""]
+  ["sp", "São Paulo"], ["gru", "Guarulhos"], ["cps", "Campinas"], ["sjc", "S. J. dos Campos"],
+  ["jun", "Jundiaí"], ["sor", "Sorocaba"], ["bau", "Bauru"], ["tau", "Taubaté"],
+  ["estado", "Estado de SP"], ["br", "Brasil todo"]
 ];
 const SOURCES = [["linkedin", "LinkedIn"], ["indeed", "Indeed"], ["gupy", "Gupy"], ["vagas", "Vagas.com.br"]];
 const SOURCE_NAME = Object.fromEntries(SOURCES);
-const CATEGORY = { 3: "Planejamento", 2: "Manutenção", 1: "Setor aéreo" };
 const STATUSES = [["vista", "Vista"], ["candidatei", "Candidatei"], ["entrevista", "Entrevista"], ["descartada", "Descartada"]];
 const STATUS_NAME = Object.fromEntries(STATUSES);
 
@@ -207,27 +260,51 @@ const store = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
 };
+const $ = (id) => document.getElementById(id);
+const normText = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+const jobKey = j => `${normText(j.title)}|${normText(j.company)}`;
+
 const state = {
+  niche: store.get("rav.niche", "aviacao"),
   time: store.get("rav.time", "week"),
   loc: store.get("rav.loc", "sp"),
   sources: store.get("rav.sources", SOURCES.map(s => s[0])),
-  terms: store.get("rav.terms", DEFAULT_TERMS.slice()),
-  status: store.get("rav.status", {}),   // chave da vaga -> vista/candidatei/entrevista/descartada
-  seen: new Set(store.get("rav.seen", [])), // vagas já mostradas em buscas anteriores
-  fresh: new Set(),                        // vagas que apareceram pela primeira vez na última busca
+  terms: [],
+  status: store.get("rav.status", {}),       // chave da vaga -> vista/candidatei/entrevista/descartada
+  seen: new Set(store.get("rav.seen", [])),  // vagas já mostradas em buscas anteriores
+  fresh: new Set(),                          // vagas que apareceram pela primeira vez na última busca
   open: new Set(),
   details: {},
-  jobs: []
+  jobs: [],
+  runs: [],
+  syncCode: store.get("rav.syncCode", "")
 };
-const normText = s => (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
-const jobKey = j => `${normText(j.title)}|${normText(j.company)}`;
-const $ = (id) => document.getElementById(id);
 if (!LOCS.some(l => l[0] === state.loc)) state.loc = "sp";
 state.sources = state.sources.filter(s => SOURCE_NAME[s]);
 if (!state.sources.length) state.sources = SOURCES.map(s => s[0]);
+
+const niche = () => NICHES[state.niche] || NICHES.aviacao;
+function loadTerms() {
+  // Os termos de aviação ficavam em "rav.terms" antes dos nichos existirem.
+  const legacy = state.niche === "aviacao" ? store.get("rav.terms", null) : null;
+  state.terms = store.get(`rav.terms.${state.niche}`, legacy) ?? niche().terms.slice();
+}
 function save() {
-  store.set("rav.time", state.time); store.set("rav.loc", state.loc);
-  store.set("rav.terms", state.terms); store.set("rav.sources", state.sources);
+  store.set("rav.niche", state.niche); store.set("rav.time", state.time); store.set("rav.loc", state.loc);
+  store.set("rav.sources", state.sources); store.set(`rav.terms.${state.niche}`, state.terms);
+}
+
+/* ---------- filtros ---------- */
+
+function seg(el, items, key, onChange) {
+  el.innerHTML = "";
+  for (const [value, label] of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    b.setAttribute("aria-pressed", String(state[key] === value));
+    b.onclick = () => { state[key] = value; onChange?.(); save(); renderFilters(); };
+    el.append(b);
+  }
 }
 
 function sourceToggles() {
@@ -247,19 +324,37 @@ function sourceToggles() {
   }
 }
 
-function seg(el, items, key) {
-  el.innerHTML = "";
-  for (const [value, label, icao] of items) {
-    const b = document.createElement("button");
-    b.type = "button"; b.textContent = label;
-    if (icao) { const s = document.createElement("span"); s.className = "icao"; s.textContent = icao; b.append(s); }
-    b.setAttribute("aria-pressed", String(state[key] === value));
-    b.onclick = () => { state[key] = value; save(); renderFilters(); };
-    el.append(b);
+function renderFilters() {
+  seg($("niche"), Object.entries(NICHES).map(([k, n]) => [k, n.label]), "niche", () => {
+    loadTerms(); showCached();
+  });
+  sourceToggles();
+  seg($("time"), TIMES, "time");
+  seg($("loc"), LOCS, "loc");
+  const box = $("terms");
+  box.innerHTML = "";
+  if (!state.terms.length) {
+    const s = document.createElement("span"); s.className = "status";
+    s.textContent = "Adicione os cargos ou palavras que você quer buscar.";
+    box.append(s);
   }
+  state.terms.forEach((t, i) => {
+    const c = document.createElement("span");
+    c.className = "chip"; c.textContent = t;
+    const x = document.createElement("button");
+    x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Remover " + t);
+    x.onclick = () => { state.terms.splice(i, 1); save(); renderFilters(); };
+    c.append(x); box.append(c);
+  });
+  $("reset").hidden = !niche().terms.length;
+  const n = niche();
+  $("only-niche-label").textContent = n.filters ? `Só vagas de ${n.label.toLowerCase()}` : "Só vagas do nicho";
+  $("only-niche").closest("label").hidden = !n.filters;
+  renderPosts();
 }
 
-// Busca de posts do LinkedIn (exige login): só monta os links; quem abre é o navegador da pessoa.
+/* ---------- posts do LinkedIn (só links; quem abre é o navegador da pessoa) ---------- */
+
 const POST_DATE = { "24h": "past-24h", week: "past-week", month: "past-month", any: "" };
 const POST_PERIOD = { "24h": "das últimas 24 horas", week: "dos últimos 7 dias", month: "dos últimos 30 dias", any: "de qualquer data" };
 const quote = t => /\s/.test(t) ? `"${t}"` : t;
@@ -270,7 +365,7 @@ function postsUrl(keywords) {
 }
 function renderPosts() {
   const hiring = "(vaga OR vagas OR contratando OR oportunidade)";
-  $("posts-all").href = postsUrl(`${hiring} AND (${state.terms.map(quote).join(" OR ")})`);
+  $("posts-all").href = state.terms.length ? postsUrl(`${hiring} AND (${state.terms.map(quote).join(" OR ")})`) : postsUrl(hiring);
   $("posts-info").textContent = `Posts ${POST_PERIOD[state.time]}, mais recentes primeiro.`;
   const ul = $("post-links");
   ul.innerHTML = "";
@@ -283,22 +378,7 @@ function renderPosts() {
   }
 }
 
-function renderFilters() {
-  renderPosts();
-  sourceToggles();
-  seg($("time"), TIMES, "time");
-  seg($("loc"), LOCS, "loc");
-  const box = $("terms");
-  box.innerHTML = "";
-  state.terms.forEach((t, i) => {
-    const c = document.createElement("span");
-    c.className = "chip"; c.textContent = t;
-    const x = document.createElement("button");
-    x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Remover " + t);
-    x.onclick = () => { state.terms.splice(i, 1); save(); renderFilters(); };
-    c.append(x); box.append(c);
-  });
-}
+/* ---------- lista de vagas ---------- */
 
 function daysAgo(iso) {
   if (!iso) return Infinity;
@@ -310,14 +390,31 @@ function fmtDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
+// Nível pelo cargo: "Analista Jr", "Técnico II", "Especialista", "Coordenador"...
+function levelOf(title) {
+  const t = ` ${normText(title)} `;
+  if (/estagi|intern(ship)?\b/.test(t)) return "estagio";
+  if (/trainee|aprendiz/.test(t)) return "trainee";
+  if (/coordenad|supervis|gerente|lider|head |manager|chefe/.test(t)) return "lideranca";
+  if (/ (sr|senior|iii|iv)\b|especialista|specialist/.test(t)) return "senior";
+  if (/ (pl|pleno|ii)\b/.test(t)) return "pleno";
+  if (/ (jr|junior|i)\b|auxiliar|assistente/.test(t)) return "junior";
+  return "";
+}
+
 function visibleJobs() {
   const f = $("filter").value.trim().toLowerCase();
-  const onlyAviation = $("only-aviation").checked;
+  const onlyNiche = niche().filters && $("only-niche").checked;
   const hideDiscarded = $("hide-discarded").checked;
+  const onlySalary = $("only-salary").checked;
+  const level = $("level").value;
   const pool = state.jobs.filter(j =>
-    (!onlyAviation || j.aviation !== false) &&
+    (!onlyNiche || j.relevant !== false) &&
     (!hideDiscarded || state.status[jobKey(j)] !== "descartada"));
-  const list = pool.filter(j => !f || [j.title, j.company, j.location].join(" ").toLowerCase().includes(f));
+  const list = pool.filter(j =>
+    (!f || [j.title, j.company, j.location].join(" ").toLowerCase().includes(f)) &&
+    (!onlySalary || j.salary) &&
+    (!level || levelOf(j.title) === level));
   const byDate = (a, b) => (b.date || "").localeCompare(a.date || "");
   list.sort($("sort").value === "score" ? (a, b) => (b.score ?? 0) - (a.score ?? 0) || byDate(a, b) : byDate);
   return { list, hidden: state.jobs.length - pool.length };
@@ -334,42 +431,69 @@ function renderJobs() {
     n.textContent = `(${notes.join(" · ")})`;
     $("count").append(n);
   }
+  renderCompanies(list);
   const ul = $("jobs");
   ul.innerHTML = "";
   if (!list.length) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = state.jobs.length ? "Nenhuma vaga com esse filtro." : "Nenhuma vaga encontrada. Tente um período maior ou outra região.";
+    li.textContent = state.jobs.length ? "Nenhuma vaga com esses filtros." : "Nenhuma vaga encontrada ainda. Tente um período maior ou outra região.";
     ul.append(li);
     return;
   }
   for (const j of list) ul.append(jobCard(j));
 }
 
+function renderCompanies(list) {
+  const counts = new Map();
+  for (const j of list) {
+    if (!j.company) continue;
+    const c = counts.get(j.company) || { total: 0, top: 0 };
+    c.total += 1; if ((j.score ?? 0) >= 2) c.top += 1;
+    counts.set(j.company, c);
+  }
+  const ul = $("companies");
+  ul.innerHTML = "";
+  const top = [...counts.entries()].sort((a, b) => b[1].total - a[1].total).slice(0, 12);
+  for (const [company, c] of top) {
+    const li = document.createElement("li");
+    const name = document.createElement("span"); name.textContent = company;
+    const bars = document.createElement("span"); bars.className = "bars";
+    const cats = niche().categories;
+    bars.textContent = `${c.total} vaga${c.total === 1 ? "" : "s"}` + (cats[2] && c.top ? ` · ${c.top} em ${cats[3].toLowerCase()}/${cats[2].toLowerCase()}` : "");
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "lnk"; b.textContent = "Filtrar";
+    b.onclick = () => { $("filter").value = company; renderJobs(); $("jobs").scrollIntoView({ behavior: "smooth" }); };
+    li.append(name, bars, b);
+    ul.append(li);
+  }
+  $("companies-box").hidden = !top.length;
+}
+
 function jobCard(j) {
   const key = jobKey(j);
   const st = state.status[key];
   const li = document.createElement("li");
-  li.className = "job" + (daysAgo(j.date) <= 2 ? " new" : "") + (st ? ` st-${st}` : "");
+  li.className = "job" + (daysAgo(j.date) <= 2 ? " recent" : "") + (st ? ` st-${st}` : "");
   const h = document.createElement("h3");
   if (state.fresh.has(key)) { const b = document.createElement("span"); b.className = "badge-new"; b.textContent = "Nova"; h.append(b); }
   const a = document.createElement("a");
   a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = j.title || "(sem título)";
-  a.onclick = () => { if (!state.status[key]) setStatus_(key, "vista", false); };
+  a.onclick = () => { if (!state.status[key]) setJobStatus(j, "vista", false); };
   h.append(a);
   if (st) { const b = document.createElement("span"); b.className = "badge-status"; b.textContent = `· ${STATUS_NAME[st]}`; h.append(b); }
   const meta = document.createElement("div");
   meta.className = "meta";
   const co = document.createElement("strong"); co.textContent = j.company || "Empresa não informada";
-  meta.append(co, ` · ${j.location}`);
+  meta.append(co, j.location ? ` · ${j.location}` : "");
   if (j.salary) { const s = document.createElement("span"); s.className = "salary"; s.textContent = ` · ${j.salary}`; meta.append(s); }
   const when = document.createElement("div");
   when.className = "when";
   when.textContent = [fmtDate(j.date), j.posted].filter(Boolean).join("\n");
-  when.style.whiteSpace = "pre-line";
   const tags = document.createElement("div");
   tags.className = "tags";
-  if (CATEGORY[j.score]) { const c = document.createElement("span"); c.className = `cat cat-${j.score}`; c.textContent = CATEGORY[j.score]; tags.append(c); }
+  const cat = niche().categories[j.score];
+  if (cat) { const c = document.createElement("span"); c.className = `cat cat-${j.score}`; c.textContent = cat; tags.append(c); }
   const srcs = document.createElement("div");
   srcs.className = "srcs";
   for (const [src, href] of Object.entries(j.links)) {
@@ -404,7 +528,7 @@ function detailPanel(j, key) {
     const b = document.createElement("button");
     b.type = "button"; b.textContent = label;
     b.setAttribute("aria-pressed", String(state.status[key] === value));
-    b.onclick = () => setStatus_(key, state.status[key] === value ? null : value);
+    b.onclick = () => setJobStatus(j, state.status[key] === value ? null : value);
     row.append(b);
   }
   box.append(row);
@@ -420,6 +544,8 @@ function detailPanel(j, key) {
     const f = document.createElement("span"); f.className = "fact"; f.textContent = v; facts.append(f);
   }
   if (facts.childElementCount) box.append(facts);
+  const m = matchCv(d);
+  if (m) box.append(m);
   if (d.highlights.length) {
     const ul = document.createElement("ul");
     ul.className = "highlights";
@@ -432,10 +558,44 @@ function detailPanel(j, key) {
   return box;
 }
 
+/* ---------- currículo x vaga (estimativa simples por palavras) ---------- */
+
+const STOP = new Set("para com sem mais menos sobre entre como pelo pela pelos pelas onde quando desde ainda tambem muito muita outros outras nossa nosso voce sera seja sera estar sendo possuir possui necessario desejavel requisitos experiencia conhecimento conhecimentos vaga empresa area trabalho atividades responsabilidades beneficios horario".split(" "));
+function keywordsOf(lines) {
+  const counts = new Map();
+  for (const l of lines) {
+    for (const w of normText(l).split(/[^a-z0-9+#]+/)) {
+      if (w.length < 4 || STOP.has(w) || /^\d+$/.test(w)) continue;
+      counts.set(w, (counts.get(w) || 0) + 1);
+    }
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 14).map(([w]) => w);
+}
+function matchCv(d) {
+  const cv = normText($("cv").value);
+  if (cv.length < 40) return null;
+  const asked = [
+    ...d.licenses.map(l => ({ label: l, test: new RegExp(`\\b${normText(l).replace(/ /g, "[ -]?")}\\b`) })),
+    ...(d.english ? [{ label: d.english, test: /ingles|english/ }] : []),
+    ...keywordsOf(d.highlights).map(w => ({ label: w, test: new RegExp(`\\b${w.slice(0, Math.max(4, w.length - 2))}`) }))
+  ];
+  if (!asked.length) return null;
+  const hit = asked.filter(a => a.test.test(cv));
+  const miss = asked.filter(a => !a.test.test(cv));
+  const pct = Math.round((hit.length / asked.length) * 100);
+  const box = document.createElement("div");
+  box.className = "match";
+  const s = document.createElement("strong"); s.textContent = `Combina ${pct}% com seu currículo`;
+  box.append(s);
+  if (miss.length) { const p = document.createElement("span"); p.className = "miss"; p.textContent = "Não aparece no currículo: " + miss.slice(0, 8).map(a => a.label).join(", "); box.append(p); }
+  if (hit.length) { const p = document.createElement("span"); p.className = "hit"; p.textContent = "Tem: " + hit.slice(0, 8).map(a => a.label).join(", "); box.append(p); }
+  return box;
+}
+
 // Lê o anúncio pela fonte mais fácil de abrir: LinkedIn, Gupy, Vagas.com.br e, por último, Indeed.
 async function loadDetails(j) {
   const key = jobKey(j);
-  if (state.details[key]) return;
+  if (state.details[key] && !state.details[key].error) return;
   state.details[key] = { loading: true };
   const order = ["linkedin", "gupy", "vagas", "indeed"].filter(src => j.links[src]);
   let last = "sem link";
@@ -453,10 +613,137 @@ async function loadDetails(j) {
   renderJobs();
 }
 
-function setStatus_(key, value, render = true) {
+/* ---------- status e sincronização ---------- */
+
+function setJobStatus(j, value, render = true) {
+  const key = jobKey(j);
   if (value) state.status[key] = value; else delete state.status[key];
   store.set("rav.status", state.status);
+  if (state.syncCode) {
+    fetch("/api/sync", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "set", code: state.syncCode, key, status: value, title: j.title, company: j.company, url: j.url })
+    }).then(r => { if (!r.ok) throw new Error(); }).catch(() => setSyncInfo("Não deu para sincronizar agora; o status ficou salvo neste aparelho.", true));
+  }
   if (render) renderJobs();
+}
+
+function setSyncInfo(msg, err = false) { const s = $("sync-info"); s.textContent = msg; s.classList.toggle("err", err); }
+
+async function pullStatuses() {
+  if (!state.syncCode) return;
+  try {
+    const res = await fetch("/api/sync", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "get", code: state.syncCode })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
+    state.status = { ...state.status, ...data.statuses };
+    store.set("rav.status", state.status);
+    setSyncInfo(`Sincronizado: ${Object.keys(data.statuses).length} vaga(s) com status neste código.`);
+    if (state.jobs.length) renderJobs();
+  } catch (e) {
+    setSyncInfo(`Não deu para sincronizar (${e.message}). Os status continuam salvos neste aparelho.`, true);
+  }
+}
+
+/* ---------- busca: uma chamada por fonte, mostrando o que chega ---------- */
+
+function mergeJobs(target, incoming) {
+  const byKey = new Map(target.map(j => [jobKey(j), j]));
+  for (const job of incoming) {
+    const key = jobKey(job);
+    const seen = byKey.get(key);
+    if (!seen) { const j = { ...job }; target.push(j); byKey.set(key, j); continue; }
+    for (const t of job.terms) if (!seen.terms.includes(t)) seen.terms.push(t);
+    for (const [src, href] of Object.entries(job.links)) seen.links[src] ??= href;
+    if ((job.date || "") > (seen.date || "")) seen.date = job.date;
+    seen.salary ||= job.salary;
+  }
+}
+
+function renderProgress(progress) {
+  const el = $("progress");
+  el.innerHTML = "";
+  for (const [src, p] of Object.entries(progress)) {
+    const s = document.createElement("span");
+    s.className = p.state;
+    s.textContent = `${SOURCE_NAME[src]} ${p.state === "done" ? `✓ ${p.count}` : p.state === "fail" ? "✕" : "…"}`;
+    s.title = p.error || "";
+    el.append(s);
+  }
+}
+
+async function search() {
+  if (!state.terms.length) { setStatus("Adicione ao menos um termo.", true); return; }
+  const go = $("go");
+  go.disabled = true; go.textContent = "Buscando…";
+  setStatus(`Buscando ${state.terms.length} termo(s)…`);
+  const collected = [];
+  const runs = [];
+  const progress = Object.fromEntries(state.sources.map(s => [s, { state: "", count: 0 }]));
+  renderProgress(progress);
+  state.open.clear();
+  let first = true;
+  await Promise.all(state.sources.map(async src => {
+    try {
+      const p = new URLSearchParams({ terms: state.terms.join("|"), sources: src, loc: state.loc, period: state.time, niche: state.niche });
+      const res = await fetch("/api/vagas?" + p);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
+      mergeJobs(collected, data.jobs);
+      runs.push(...data.runs);
+      const failed = data.runs.filter(r => r.error);
+      progress[src] = { state: failed.length === data.runs.length && data.runs.length ? "fail" : "done", count: data.jobs.length, error: failed[0]?.error };
+    } catch (e) {
+      progress[src] = { state: "fail", count: 0, error: e.message };
+      runs.push({ source: src, term: "(todos)", count: 0, error: e.message });
+    }
+    renderProgress(progress);
+    showResults({ fetchedAt: new Date().toISOString(), jobs: collected, runs }, first ? "first" : "update");
+    first = false;
+  }));
+  showResults({ fetchedAt: new Date().toISOString(), jobs: collected, runs }, "final");
+  const failed = Object.values(progress).filter(p => p.state === "fail").length;
+  const hora = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  setStatus(failed ? `Atualizado às ${hora}. ${failed} fonte(s) não responderam; veja "Resultado por fonte e termo".` : `Atualizado às ${hora}.`, failed === state.sources.length);
+  go.disabled = false; go.textContent = "Buscar vagas";
+}
+
+// "first"/"update" mostram o que já chegou; "final" marca as novas e guarda o resultado.
+function showResults(data, phase) {
+  state.jobs = data.jobs;
+  state.runs = data.runs;
+  if (phase === "final" || phase === "first" || phase === "update") {
+    state.fresh = new Set(data.jobs.map(jobKey).filter(k => !state.seen.has(k)));
+    if (!state.seen.size) state.fresh = new Set(); // primeira busca: nada é "novo"
+  }
+  if (phase === "final") {
+    data.jobs.forEach(j => state.seen.add(jobKey(j)));
+    store.set("rav.seen", [...state.seen].slice(-5000));
+    store.set(`rav.last.${state.niche}`, { ...data, fresh: [...state.fresh] });
+  }
+  if (phase === "cached") state.fresh = new Set(data.fresh || []);
+  $("placeholder").hidden = true;
+  $("results").hidden = false;
+  renderJobs();
+  renderDiag(data.runs);
+}
+
+function showCached() {
+  const last = store.get(`rav.last.${state.niche}`, null) ?? (state.niche === "aviacao" ? store.get("rav.last", null) : null);
+  if (last?.jobs?.length) {
+    for (const j of last.jobs) if (j.relevant === undefined) j.relevant = j.aviation;
+    showResults(last, "cached");
+    const quando = new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    setStatus(`Mostrando a última busca (${quando}). Toque em Buscar vagas para atualizar.`);
+  } else {
+    state.jobs = []; state.fresh = new Set();
+    $("results").hidden = true; $("placeholder").hidden = false;
+    setStatus("");
+  }
+  $("progress").innerHTML = "";
 }
 
 function renderDiag(runs) {
@@ -470,62 +757,24 @@ function renderDiag(runs) {
   }
 }
 
-async function search() {
-  if (!state.terms.length) { setStatus("Adicione ao menos um termo.", true); return; }
-  const go = $("go");
-  go.disabled = true; go.textContent = "Buscando…";
-  setStatus(`Buscando ${state.terms.length} termos em ${state.sources.map(s => SOURCE_NAME[s]).join(", ")}…`);
-  try {
-    const p = new URLSearchParams({ terms: state.terms.join("|"), sources: state.sources.join(","), loc: state.loc, period: state.time });
-    const res = await fetch("/api/vagas?" + p);
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
-    showResults(data, true);
-    const failed = data.runs.filter(r => r.error).length;
-    const hora = new Date(data.fetchedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-    setStatus(failed
-      ? `Atualizado às ${hora}. ${failed} busca(s) falharam; veja "Resultado por fonte e termo".`
-      : `Atualizado às ${hora}.`, failed > 0 && failed === data.runs.length);
-  } catch (e) {
-    setStatus("Não foi possível buscar: " + e.message + ". Tente de novo em alguns minutos.", true);
-  } finally {
-    go.disabled = false; go.textContent = "Buscar vagas";
-  }
-}
-
-// Marca as vagas que nunca apareceram antes como novas e guarda o resultado para abrir o site já com a lista.
-function showResults(data, fromSearch) {
-  state.jobs = data.jobs;
-  if (fromSearch) {
-    state.fresh = new Set(data.jobs.map(jobKey).filter(k => !state.seen.has(k)));
-    if (!state.seen.size) state.fresh = new Set(); // primeira busca: nada é "novo"
-    data.jobs.forEach(j => state.seen.add(jobKey(j)));
-    store.set("rav.seen", [...state.seen].slice(-5000));
-    store.set("rav.last", { ...data, fresh: [...state.fresh] });
-  } else {
-    state.fresh = new Set(data.fresh || []);
-  }
-  $("placeholder").hidden = true;
-  $("results").hidden = false;
-  renderJobs();
-  renderDiag(data.runs);
-}
-
 function setStatus(msg, err = false) { const s = $("status"); s.textContent = msg; s.classList.toggle("err", err); }
 
 function downloadCsv() {
-  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
+  const cats = niche().categories;
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["category", "Área"], ["level", "Nível"], ["status", "Status"], ["salary", "Salário"], ["sources", "Fontes"], ["terms", "Termos"], ["url", "Link"]];
   const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
-  const row = j => ({ ...j, category: CATEGORY[j.score] || "", status: STATUS_NAME[state.status[jobKey(j)]] || "",
-    sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
+  const row = j => ({ ...j, category: cats[j.score] || "", level: $("level").querySelector(`option[value="${levelOf(j.title)}"]`)?.textContent || "",
+    status: STATUS_NAME[state.status[jobKey(j)]] || "", sources: Object.keys(j.links).map(k => SOURCE_NAME[k] || k) });
   const rows = [cols.map(c => esc(c[1])).join(";"), ...visibleJobs().list.map(row).map(j => cols.map(c => esc(j[c[0]])).join(";"))];
   const blob = new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `vagas-aviacao-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `radar-emprego-${state.niche}-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+/* ---------- eventos ---------- */
 
 $("add-form").addEventListener("submit", e => {
   e.preventDefault();
@@ -533,24 +782,63 @@ $("add-form").addEventListener("submit", e => {
   if (v && !state.terms.includes(v)) { state.terms.push(v); save(); renderFilters(); }
   $("add-input").value = "";
 });
-$("reset").onclick = () => { state.terms = DEFAULT_TERMS.slice(); save(); renderFilters(); };
+$("reset").onclick = () => { state.terms = niche().terms.slice(); save(); renderFilters(); };
 $("go").onclick = search;
 $("filter").oninput = renderJobs;
-try { $("only-aviation").checked = localStorage.getItem("rav.onlyAviation") !== "0"; } catch {}
-$("only-aviation").onchange = () => {
-  try { localStorage.setItem("rav.onlyAviation", $("only-aviation").checked ? "1" : "0"); } catch {}
-  renderJobs();
-};
+for (const id of ["sort", "level"]) {
+  $(id).value = store.get(`rav.${id}`, $(id).value);
+  $(id).onchange = () => { store.set(`rav.${id}`, $(id).value); renderJobs(); };
+}
+for (const id of ["only-niche", "only-salary", "hide-discarded"]) {
+  $(id).checked = store.get(`rav.${id}`, $(id).checked);
+  $(id).onchange = () => { store.set(`rav.${id}`, $(id).checked); renderJobs(); };
+}
 $("csv").onclick = downloadCsv;
-$("sort").onchange = () => { store.set("rav.sort", $("sort").value); renderJobs(); };
-$("hide-discarded").onchange = renderJobs;
-$("sort").value = store.get("rav.sort", "score");
-renderFilters();
-const last = store.get("rav.last", null);
-if (last?.jobs?.length) {
-  showResults(last, false);
-  const quando = new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
-  setStatus(`Mostrando a última busca (${quando}). Toque em Buscar vagas para atualizar.`);
+$("cv").value = store.get("rav.cv", "");
+$("cv").oninput = () => { store.set("rav.cv", $("cv").value); };
+$("cv").onchange = () => { if (state.jobs.length) renderJobs(); };
+$("sync-code").value = state.syncCode;
+if (state.syncCode) setSyncInfo("Sincronizando…");
+$("sync-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const code = $("sync-code").value.trim();
+  if (code && !/^[A-Za-z0-9-]{8,40}$/.test(code)) { setSyncInfo("Use de 8 a 40 letras, números ou hífen.", true); return; }
+  state.syncCode = code;
+  store.set("rav.syncCode", code);
+  if (!code) { setSyncInfo("Sem código, os status ficam só neste aparelho."); return; }
+  // Manda os status deste aparelho e depois puxa os do código.
+  const jobsByKey = new Map(state.jobs.map(j => [jobKey(j), j]));
+  for (const [key, value] of Object.entries(state.status)) {
+    const j = jobsByKey.get(key);
+    fetch("/api/sync", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ action: "set", code, key, status: value, title: j?.title || key.split("|")[0], company: j?.company || "", url: j?.url || "" }) }).catch(() => {});
+  }
+  setTimeout(pullStatuses, 1500);
+});
+$("sync-new").onclick = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  $("sync-code").value = "radar-" + [...bytes].map(b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
+  setSyncInfo("Código gerado. Toque em \"Usar este código\" e use o mesmo código no outro aparelho.");
+};
+
+async function boot() {
+  try {
+    const res = await fetch("/api/nichos");
+    if (res.ok) {
+      const data = await res.json();
+      NICHES = data.niches;
+      if (!NICHES[state.niche]) state.niche = data.default;
+    }
+  } catch {}
+  loadTerms();
+  renderFilters();
+  showCached();
+  pullStatuses();
+}
+boot();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 }
 </script>
 </body>
