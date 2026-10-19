@@ -6,7 +6,7 @@ O nicho padrão é **aviação** (manutenção, planejamento, MRO, engenharia). 
 
 ## Estrutura
 
-- `index.html`: o site (também instalável como app: `manifest.json`, `sw.js`, `icon*.png`).
+- `index.html`: o site (também instalável como app: `manifest.json`, `sw.js`, `icon*.png`). O currículo em PDF é lido no próprio navegador com o pdf.js e não vai para nenhum servidor.
 - `api/vagas.js`: busca nas fontes escolhidas e junta a mesma vaga encontrada em mais de uma, com o link de cada fonte. O site chama uma fonte por vez, em paralelo, para mostrar o que já chegou.
 - `api/detalhe.js` + `lib/details.js`: abre o anúncio e resume licenças, inglês, experiência, salário, regime e requisitos.
 - `api/nichos.js` + `lib/niches.js`: nichos disponíveis.

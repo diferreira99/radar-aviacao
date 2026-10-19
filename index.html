@@ -45,7 +45,7 @@ h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .18em;
 form.add { display: flex; gap: 8px; flex-wrap: wrap; }
 input[type="text"], input[type="search"], textarea { flex: 1 1 220px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
 textarea { width: 100%; min-height: 140px; resize: vertical; }
-.ghost { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.ghost { display: inline-block; font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
 .go { font: inherit; font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 4px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
 .go:disabled { opacity: .6; cursor: progress; }
 a.go { text-decoration: none; display: inline-block; }
@@ -182,21 +182,27 @@ details.diag li.err { color: var(--bad); }
   </details>
 
   <details class="box" id="me">
-    <summary><span class="box-title">Meu currículo e sincronização</span>
-      <span class="box-sub">Cole seu currículo para ver o quanto cada vaga combina com você. Use um código para ver seus status no celular e no computador.</span></summary>
+    <summary><span class="box-title">Meu currículo e nuvem</span>
+      <span class="box-sub">Envie seu currículo em PDF para ver o quanto cada vaga combina com você, e conecte à nuvem para ver seus status no celular e no computador.</span></summary>
     <div class="row">
-      <label class="label" for="cv">Currículo (texto)</label>
-      <textarea id="cv" placeholder="Cole aqui o texto do seu currículo: cursos, licenças, experiências, idiomas…"></textarea>
-      <span class="status" id="cv-info">Fica salvo só neste aparelho.</span>
+      <span class="label">Currículo</span>
+      <div class="actions">
+        <label class="ghost" for="cv-file">Enviar currículo em PDF</label>
+        <input id="cv-file" type="file" accept="application/pdf,.pdf,text/plain,.txt" hidden>
+        <span class="status" id="cv-file-info"></span>
+      </div>
+      <textarea id="cv" aria-label="Texto do currículo" placeholder="O texto do PDF aparece aqui. Você também pode colar o currículo direto: cursos, licenças, experiências, idiomas…"></textarea>
+      <span class="status" id="cv-info">O currículo fica salvo só neste aparelho; o arquivo é lido aqui mesmo e não é enviado para nenhum servidor.</span>
     </div>
     <div class="row">
-      <span class="label">Código de sincronização</span>
+      <span class="label">Conectar na nuvem</span>
+      <span class="status">Com um código, os status das vagas (vista, candidatei, entrevista, descartada) ficam guardados na nuvem: aparecem no celular e no computador, e entram no resumo de segunda no WhatsApp. Use o mesmo código em todos os seus aparelhos.</span>
       <form class="add" id="sync-form">
         <input id="sync-code" class="code" type="text" placeholder="Ex.: radar-7k2m9x4q" aria-label="Código de sincronização" autocomplete="off">
-        <button class="ghost" type="submit">Usar este código</button>
+        <button class="ghost" type="submit">Conectar</button>
         <button class="ghost" type="button" id="sync-new">Gerar código novo</button>
       </form>
-      <span class="status" id="sync-info">Sem código, os status ficam só neste aparelho.</span>
+      <span class="status" id="sync-info">Ainda não conectado: os status ficam só neste aparelho.</span>
     </div>
   </details>
 
@@ -713,7 +719,7 @@ async function pullStatuses() {
     if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
     state.status = { ...state.status, ...data.statuses };
     store.set("rav.status", state.status);
-    setSyncInfo(`Sincronizado: ${Object.keys(data.statuses).length} vaga(s) com status neste código.`);
+    setSyncInfo(`Conectado à nuvem: ${Object.keys(data.statuses).length} vaga(s) com status neste código.`);
     if (state.jobs.length) renderJobs();
   } catch (e) {
     setSyncInfo(`Não deu para sincronizar (${e.message}). Os status continuam salvos neste aparelho.`, true);
@@ -872,6 +878,44 @@ $("csv").onclick = downloadCsv;
 $("cv").value = store.get("rav.cv", "");
 $("cv").oninput = () => { store.set("rav.cv", $("cv").value); };
 $("cv").onchange = () => { if (state.jobs.length) renderJobs(); };
+// Lê o PDF aqui mesmo com o pdf.js (o arquivo não sai do aparelho) e põe o texto no campo do currículo.
+const PDFJS = "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/";
+async function readCvFile(file) {
+  const info = $("cv-file-info");
+  info.classList.remove("err");
+  try {
+    let content;
+    if (/\.txt$/i.test(file.name) || file.type === "text/plain") {
+      content = await file.text();
+    } else {
+      info.textContent = "Lendo o PDF…";
+      const pdfjs = await import(PDFJS + "pdf.min.mjs");
+      pdfjs.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker.min.mjs";
+      const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pages = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await (await pdf.getPage(i)).getTextContent();
+        pages.push(page.items.map(it => it.str + (it.hasEOL ? "\n" : " ")).join(""));
+      }
+      content = pages.join("\n");
+    }
+    content = content.replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+    if (content.length < 40) {
+      info.textContent = "Não achei texto nesse arquivo. Se o PDF for uma imagem escaneada, cole o texto no campo abaixo.";
+      info.classList.add("err");
+      return;
+    }
+    $("cv").value = content;
+    store.set("rav.cv", content);
+    info.textContent = `${file.name} lido: ${content.split(/\s+/).length} palavras.`;
+    if (state.jobs.length) renderJobs();
+  } catch (e) {
+    info.textContent = `Não deu para ler o arquivo (${e.message}). Cole o texto do currículo no campo abaixo.`;
+    info.classList.add("err");
+  }
+}
+$("cv-file").onchange = (e) => { const f = e.target.files?.[0]; if (f) readCvFile(f); e.target.value = ""; };
+
 $("sync-code").value = state.syncCode;
 if (state.syncCode) setSyncInfo("Sincronizando…");
 $("sync-form").addEventListener("submit", e => {
@@ -880,7 +924,7 @@ $("sync-form").addEventListener("submit", e => {
   if (code && !/^[A-Za-z0-9-]{8,40}$/.test(code)) { setSyncInfo("Use de 8 a 40 letras, números ou hífen.", true); return; }
   state.syncCode = code;
   store.set("rav.syncCode", code);
-  if (!code) { setSyncInfo("Sem código, os status ficam só neste aparelho."); return; }
+  if (!code) { setSyncInfo("Desconectado: os status ficam só neste aparelho."); return; }
   // Manda os status deste aparelho e depois puxa os do código.
   const jobsByKey = new Map(state.jobs.map(j => [jobKey(j), j]));
   for (const [key, value] of Object.entries(state.status)) {
@@ -893,7 +937,7 @@ $("sync-form").addEventListener("submit", e => {
 $("sync-new").onclick = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(6));
   $("sync-code").value = "radar-" + [...bytes].map(b => "abcdefghjkmnpqrstuvwxyz23456789"[b % 31]).join("");
-  setSyncInfo("Código gerado. Toque em \"Usar este código\" e use o mesmo código no outro aparelho.");
+  setSyncInfo("Código gerado. Toque em \"Conectar\" e digite o mesmo código nos seus outros aparelhos.");
 };
 
 async function boot() {
