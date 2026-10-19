@@ -224,6 +224,23 @@ details.diag li.err { color: var(--danger); }
   .content { padding-top: 16px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+.list-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-sm { padding: 5px 10px; font-size: .74rem; }
+.card-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.card-actions .toggle { margin-right: auto; }
+.quick { font-size: .76rem; font-weight: 600; border: 1.5px solid var(--border); background: #fff; color: #475069; border-radius: 99px; padding: 3px 11px; cursor: pointer; }
+.quick:hover { border-color: var(--accent); color: var(--accent); }
+.quick[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
+.track-h { margin: 16px 0 8px; font-size: .84rem; font-weight: 700; }
+.link-list select { font-size: .78rem; padding: 4px 8px; border: 1.5px solid var(--border); border-radius: 8px; background: #fff; color: #475069; }
+.kpi[role="button"]:hover { border-color: var(--accent); }
+#toast { position: fixed; left: 50%; bottom: 22px; transform: translate(-50%, 20px); background: var(--text); color: #fff; padding: 10px 16px; border-radius: 10px; font-size: .84rem; opacity: 0; pointer-events: none; transition: .2s; z-index: 50; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+#toast button { background: none; border: 0; color: #fff; font-weight: 800; text-decoration: underline; cursor: pointer; margin-left: 8px; }
+.job-title h3 { flex: 1; }
+.star { flex: none; font-size: 1.35rem; line-height: 1; background: none; border: 0; padding: 0 2px; cursor: pointer; color: #b6bdcc; }
+.star:hover { color: #f59e0b; }
+.star[aria-pressed="true"] { color: #f59e0b; }
 </style>
 </head>
 <body>
@@ -238,6 +255,7 @@ details.diag li.err { color: var(--danger); }
     <button class="nav-item" data-tab="painel"><span class="icon" style="background:#165DFF">◉</span>Painel</button>
     <div class="nav-section"><i style="background:#FF6A00"></i>Vagas</div>
     <button class="nav-item" data-tab="vagas"><span class="icon" style="background:#FF6A00">☰</span>Vagas<span class="count-badge" id="nav-count" hidden></span></button>
+    <button class="nav-item" data-tab="acompanhar"><span class="icon" style="background:#16a34a">✓</span>Acompanhar</button>
     <button class="nav-item" data-tab="buscar"><span class="icon" style="background:#E23A6B">⌕</span>Buscar</button>
     <button class="nav-item" data-tab="empresas"><span class="icon" style="background:#0f766e">▦</span>Empresas</button>
     <button class="nav-item" data-tab="posts"><span class="icon" style="background:#0a66c2">in</span>Posts do LinkedIn</button>
@@ -290,6 +308,10 @@ details.diag li.err { color: var(--danger); }
         <ul class="link-list" id="best"></ul>
         <div class="actions"><button class="btn" type="button" data-nav="vagas">Ver todas as vagas →</button></div>
       </div>
+      <div class="card" id="soon-card" hidden>
+        <div class="card-head"><h3 class="card-title">Encerram em breve</h3><span class="pill-muted">próximos 7 dias</span></div>
+        <ul class="link-list" id="soon"></ul>
+      </div>
     </section>
 
     <!-- VAGAS -->
@@ -333,11 +355,14 @@ details.diag li.err { color: var(--danger); }
           <label class="check"><input id="only-salary" type="checkbox"> Só com salário</label>
           <label class="check"><input id="only-pcd" type="checkbox"> Só que aceitam PcD</label>
           <label class="check"><input id="hide-discarded" type="checkbox" checked> Esconder descartadas</label>
+          <label class="check"><input id="only-new" type="checkbox"> Só novas</label>
+          <label class="check"><input id="only-fav" type="checkbox"> ★ Só favoritas</label>
+          <button class="btn btn-sm" id="clear-filters" type="button" hidden>Limpar filtros</button>
         </div>
       </div>
 
       <div id="results" class="row" hidden>
-        <div class="list-head"><span class="count" id="count"></span><button class="btn" id="csv" type="button">⤓ Baixar planilha (CSV)</button></div>
+        <div class="list-head"><span class="count" id="count"></span><span class="list-actions"><button class="btn" id="mark-seen" type="button" hidden>✓ Marcar novas como vistas</button><button class="btn" id="csv" type="button">⤓ Baixar planilha (CSV)</button></span></div>
         <ul class="jobs" id="jobs"></ul>
         <details class="diag"><summary>Resultado por fonte e termo</summary><ul id="diag"></ul></details>
       </div>
@@ -441,6 +466,14 @@ details.diag li.err { color: var(--danger); }
     </section>
 
     <!-- NUVEM -->
+    <!-- ACOMPANHAR -->
+    <section class="tab" data-tab="acompanhar">
+      <div class="card">
+        <div class="card-head"><h3 class="card-title">Favoritas, candidaturas e entrevistas</h3><span class="pill-muted" id="track-pill">—</span></div>
+        <div id="track"></div>
+      </div>
+    </section>
+
     <section class="tab" data-tab="nuvem">
       <div class="card">
         <div class="card-head"><h3 class="card-title">Conectar na nuvem</h3></div>
@@ -499,6 +532,7 @@ const state = {
   runs: [],
   syncCode: store.get("rav.syncCode", "")
 };
+state.fav = store.get("rav.fav", {});            // chave da vaga -> {title, company, url}
 if (!LOCS.some(l => l[0] === state.loc)) state.loc = "sp";
 state.sources = state.sources.filter(s => SOURCE_NAME[s]);
 if (!state.sources.length) state.sources = SOURCES.map(s => s[0]);
@@ -636,6 +670,8 @@ function visibleJobs() {
   const workplace = $("workplace").value;
   const contract = $("contract").value;
   const onlyPcd = $("only-pcd").checked;
+  const onlyNew = $("only-new").checked;
+  const onlyFav = $("only-fav").checked;
   const pool = state.jobs.filter(j =>
     (!onlyNiche || j.relevant !== false) &&
     (!hideDiscarded || state.status[jobKey(j)] !== "descartada"));
@@ -645,7 +681,9 @@ function visibleJobs() {
     (!level || jobLevel(j) === level) &&
     (!workplace || j.workplace === workplace) &&
     (!contract || j.contract === contract) &&
-    (!onlyPcd || j.pcd));
+    (!onlyPcd || j.pcd) &&
+    (!onlyNew || state.fresh.has(jobKey(j))) &&
+    (!onlyFav || state.fav[jobKey(j)]));
   const byDate = (a, b) => (b.date || "").localeCompare(a.date || "");
   list.sort($("sort").value === "score" ? (a, b) => (b.score ?? 0) - (a.score ?? 0) || byDate(a, b) : byDate);
   return { list, hidden: state.jobs.length - pool.length };
@@ -653,6 +691,8 @@ function visibleJobs() {
 
 function renderJobs() {
   renderDashboard();
+  $("clear-filters").hidden = !filtersActive();
+  $("mark-seen").hidden = !state.fresh.size;
   const { list, hidden } = visibleJobs();
   const fresh = list.filter(j => state.fresh.has(jobKey(j))).length;
   $("count").textContent = `${list.length} vaga${list.length === 1 ? "" : "s"}`;
@@ -703,6 +743,137 @@ function renderCompanies(list) {
   $("companies-empty").hidden = top.length > 0;
 }
 
+const TRACK = [["entrevista", "Em entrevista"], ["candidatei", "Candidatei"]];
+
+let toastTimer;
+function toast(msg, undo) {
+  let t = $("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.setAttribute("role", "status"); document.body.append(t); }
+  t.textContent = msg + " ";
+  if (undo) {
+    const u = document.createElement("button");
+    u.type = "button"; u.textContent = "Desfazer";
+    u.onclick = () => { undo(); t.classList.remove("show"); };
+    t.append(u);
+  }
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 6000);
+}
+
+function toggleFav(j) {
+  const key = jobKey(j);
+  if (state.fav[key]) delete state.fav[key];
+  else state.fav[key] = { title: j.title, company: j.company, url: j.url };
+  store.set("rav.fav", state.fav);
+  renderJobs();
+}
+
+function quickBtn(j, key, value, label, onLabel) {
+  const b = document.createElement("button");
+  b.type = "button"; b.className = "quick";
+  const on = state.status[key] === value;
+  b.textContent = on ? onLabel : label;
+  b.setAttribute("aria-pressed", String(on));
+  b.onclick = () => {
+    const prev = state.status[key] || null;
+    setJobStatus(j, on ? null : value);
+    if (value === "descartada" && !on) toast("Vaga descartada.", () => setJobStatus(j, prev));
+  };
+  return b;
+}
+
+function filtersActive() {
+  return Boolean($("filter").value.trim() || $("level").value || $("workplace").value || $("contract").value ||
+    $("only-salary").checked || $("only-pcd").checked || $("only-new").checked || $("only-fav").checked);
+}
+
+function renderSoon() {
+  const soon = state.jobs
+    .filter(j => j.deadline && daysUntil(j.deadline) >= 0 && daysUntil(j.deadline) <= 7 &&
+      !["candidatei", "entrevista", "descartada"].includes(state.status[jobKey(j)]))
+    .sort((a, b) => a.deadline.localeCompare(b.deadline)).slice(0, 5);
+  $("soon-card").hidden = !soon.length;
+  const ul = $("soon");
+  ul.innerHTML = "";
+  for (const j of soon) {
+    const left = daysUntil(j.deadline);
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    const b = document.createElement("strong"); b.textContent = j.title;
+    name.append(b, ` · ${j.company || "Empresa não informada"}`);
+    const meta = document.createElement("span"); meta.className = "bars";
+    meta.textContent = left <= 0 ? "Encerra hoje" : `Encerra em ${left} dia${left === 1 ? "" : "s"}`;
+    const a = document.createElement("a"); a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Abrir ↗";
+    li.append(name, meta, a); ul.append(li);
+  }
+}
+
+function renderTrack() {
+  const saved = store.get("rav.meta", {});
+  let changed = false;
+  const items = { entrevista: [], candidatei: [] };
+  for (const [key, st] of Object.entries(state.status)) {
+    if (!items[st]) continue;
+    let m = saved[key];
+    if (!m) {
+      const j = state.jobs.find(x => jobKey(x) === key);
+      if (j) { m = saved[key] = { title: j.title, company: j.company, url: j.url }; changed = true; }
+      else { const i = key.lastIndexOf("|"); m = { title: key.slice(0, i), company: key.slice(i + 1), url: "" }; }
+    }
+    items[st].push(m);
+  }
+  if (changed) store.set("rav.meta", saved);
+  const favs = Object.values(state.fav);
+  const box = $("track");
+  box.innerHTML = "";
+  const total = items.entrevista.length + items.candidatei.length + favs.length;
+  $("track-pill").textContent = total ? `${total} vaga${total === 1 ? "" : "s"}` : "—";
+  if (!total) {
+    const p = document.createElement("p");
+    p.className = "detail-note";
+    p.textContent = "Nada por aqui ainda. Toque na ☆ de uma vaga para favoritar, ou em Candidatei, e acompanhe tudo nesta página.";
+    box.append(p);
+    return;
+  }
+  const row = (it, control) => {
+    const li = document.createElement("li");
+    const name = document.createElement("span");
+    const b = document.createElement("strong"); b.textContent = it.title || "(sem título)";
+    name.append(b, ` · ${it.company || "Empresa não informada"}`);
+    li.append(name);
+    if (it.url) { const a = document.createElement("a"); a.href = it.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Abrir ↗"; li.append(a); }
+    li.append(control);
+    return li;
+  };
+  const section = (label, list, mk) => {
+    if (!list.length) return;
+    const h = document.createElement("h4");
+    h.className = "track-h"; h.textContent = `${label} (${list.length})`;
+    const ul = document.createElement("ul");
+    ul.className = "link-list";
+    for (const it of list) ul.append(row(it, mk(it)));
+    box.append(h, ul);
+  };
+  section("★ Favoritas", favs, it => {
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "lnk"; x.textContent = "Tirar ★";
+    x.onclick = () => toggleFav(it);
+    return x;
+  });
+  const statusSelect = (it, st) => {
+    const sel = document.createElement("select");
+    sel.setAttribute("aria-label", "Mudar status");
+    for (const [v, l] of STATUSES.filter(([v]) => v !== "vista")) {
+      const o = document.createElement("option"); o.value = v; o.textContent = l; o.selected = v === st; sel.append(o);
+    }
+    const rm = document.createElement("option"); rm.value = ""; rm.textContent = "Remover da lista"; sel.append(rm);
+    sel.onchange = () => setJobStatus(it, sel.value || null);
+    return sel;
+  };
+  for (const [st, label] of TRACK) section(label, items[st], it => statusSelect(it, st));
+}
+
 function jobCard(j) {
   const key = jobKey(j);
   const st = state.status[key];
@@ -727,6 +898,15 @@ function jobCard(j) {
     head.append(initials());
   }
   head.append(h);
+  const fav = Boolean(state.fav[key]);
+  const star = document.createElement("button");
+  star.type = "button"; star.className = "star";
+  star.textContent = fav ? "★" : "☆";
+  star.setAttribute("aria-pressed", String(fav));
+  star.setAttribute("aria-label", fav ? "Tirar dos favoritos" : "Favoritar");
+  star.title = fav ? "Tirar dos favoritos" : "Favoritar";
+  star.onclick = () => toggleFav(j);
+  head.append(star);
   if (state.fresh.has(key)) { const b = document.createElement("span"); b.className = "badge-new"; b.textContent = "Nova"; h.append(b); }
   const a = document.createElement("a");
   a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = j.title || "(sem título)";
@@ -774,7 +954,12 @@ function jobCard(j) {
     if (!isOpen) loadDetails(j);
     renderJobs();
   };
-  li.append(head, when, meta, tags, toggle);
+  const bar = document.createElement("div");
+  bar.className = "card-actions";
+  bar.append(toggle);
+  if (st !== "entrevista") bar.append(quickBtn(j, key, "candidatei", "Candidatei", "✓ Candidatei"));
+  bar.append(quickBtn(j, key, "descartada", "Descartar", "Descartada"));
+  li.append(head, when, meta, tags, bar);
   if (isOpen) li.append(detailPanel(j, key));
   return li;
 }
@@ -899,6 +1084,9 @@ function setJobStatus(j, value, render = true) {
   const key = jobKey(j);
   if (value) state.status[key] = value; else delete state.status[key];
   store.set("rav.status", state.status);
+  const saved = store.get("rav.meta", {});
+  if (TRACK.some(([t]) => t === value)) saved[key] = { title: j.title, company: j.company, url: j.url }; else delete saved[key];
+  store.set("rav.meta", saved);
   if (state.syncCode) {
     fetch("/api/sync", {
       method: "POST", headers: { "content-type": "application/json" },
@@ -1079,11 +1267,31 @@ for (const id of ["sort", "level", "workplace", "contract"]) {
   $(id).value = store.get(`rav.${id}`, $(id).value);
   $(id).onchange = () => { store.set(`rav.${id}`, $(id).value); renderJobs(); };
 }
-for (const id of ["only-niche", "only-salary", "only-pcd", "hide-discarded"]) {
+for (const id of ["only-niche", "only-salary", "only-pcd", "hide-discarded", "only-fav"]) {
   $(id).checked = store.get(`rav.${id}`, $(id).checked);
   $(id).onchange = () => { store.set(`rav.${id}`, $(id).checked); renderJobs(); };
 }
 $("csv").onclick = downloadCsv;
+$("only-new").onchange = renderJobs;
+$("clear-filters").onclick = () => {
+  $("filter").value = "";
+  for (const id of ["level", "workplace", "contract"]) { $(id).value = ""; store.set(`rav.${id}`, ""); }
+  for (const id of ["only-salary", "only-pcd", "only-new", "only-fav"]) { $(id).checked = false; store.set(`rav.${id}`, false); }
+  renderJobs();
+};
+$("mark-seen").onclick = () => {
+  state.fresh = new Set();
+  const last = store.get(`rav.last.${state.niche}`, null);
+  if (last) { last.fresh = []; store.set(`rav.last.${state.niche}`, last); }
+  renderJobs();
+};
+{
+  const k = $("k-new").parentElement;
+  k.style.cursor = "pointer"; k.tabIndex = 0; k.setAttribute("role", "button");
+  const go = () => { if (!state.fresh.size) return; $("only-new").checked = true; navigate("vagas"); renderJobs(); };
+  k.onclick = go;
+  k.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } };
+}
 $("cv").value = store.get("rav.cv", "");
 $("cv").oninput = () => { store.set("rav.cv", $("cv").value); };
 $("cv").onchange = () => { if (state.jobs.length) renderJobs(); };
@@ -1309,6 +1517,7 @@ $("sync-new").onclick = () => {
 const PAGES = {
   painel: ["Painel", "Resumo das suas vagas"],
   vagas: ["Vagas", "Todas as vagas encontradas, sem repetidas"],
+  acompanhar: ["Acompanhar", "Favoritas, candidaturas e entrevistas"],
   buscar: ["Buscar", "Nicho, fontes, região, período e termos"],
   empresas: ["Empresas", "Quem está contratando agora"],
   posts: ["Posts do LinkedIn", "Recrutadores anunciando vagas"],
@@ -1375,6 +1584,8 @@ function renderDashboard() {
     li.append(name, meta, a); ul.append(li);
   }
   const last = store.get(`rav.last.${state.niche}`, null);
+  renderSoon();
+  renderTrack();
   $("best-when").textContent = last?.fetchedAt ? `busca de ${new Date(last.fetchedAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}` : "—";
 }
 
