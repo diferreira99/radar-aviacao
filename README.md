@@ -10,6 +10,7 @@ Busca vagas de aviação (manutenção, planejamento, MRO, engenharia e afins) n
   - `gupy.js`: API pública do portal da Gupy.
   - `vagas.js`: página de busca do Vagas.com.br.
 - `lib/locations.js`: regiões e como cada fonte as entende.
+- `lib/relevance.js`: marca cada vaga como do setor aéreo ou não, pelo cargo e pela empresa (o site esconde as de fora do setor por padrão).
 
 ## API
 
