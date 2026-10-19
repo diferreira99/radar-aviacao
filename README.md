@@ -8,10 +8,10 @@ Busca vagas de aviação (manutenção, planejamento, MRO, engenharia e afins) n
 
 ## API
 
-`GET /api/vagas?terms=termo1|termo2&location=São Paulo, Brasil&period=week&pages=2`
+`GET /api/vagas?terms=termo1|termo2&location=São Paulo, Brasil&period=week&pages=3`
 
 - `period`: `24h`, `week`, `month` ou `any`
-- `pages`: páginas de 25 vagas por termo (1 a 4)
+- `pages`: páginas de cerca de 10 vagas por termo (1 a 6, padrão 3)
 
 ## Rodar os testes
 

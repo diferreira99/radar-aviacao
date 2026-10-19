@@ -4,7 +4,7 @@ const TPR = { "24h": "r86400", week: "r604800", month: "r2592000", any: "" };
 const MAX_TERMS = 15;
 const CONCURRENCY = 3;
 
-// GET /api/vagas?terms=a|b|c&location=São Paulo, Brasil&period=week&pages=2
+// GET /api/vagas?terms=a|b|c&location=São Paulo, Brasil&period=week&pages=3
 export default async function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const terms = (url.searchParams.get("terms") ?? "")
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
   const location = url.searchParams.get("location") || "São Paulo, Brasil";
   const tpr = TPR[url.searchParams.get("period")] ?? TPR.week;
-  const pages = Math.min(Math.max(Number(url.searchParams.get("pages")) || 2, 1), 4);
+  const pages = Math.min(Math.max(Number(url.searchParams.get("pages")) || 3, 1), 6);
 
   const results = [];
   const queue = [...terms];
