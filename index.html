@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar Aviação SP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root {
+  --bg: #eef1f4; --panel: #ffffff; --fg: #16202b; --muted: #5b6876; --line: #d3dae2;
+  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #e4e9ef; --bad: #b3261e;
+  --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f151c; --panel: #17202a; --fg: #e6ecf2; --muted: #93a1b0; --line: #2a3644;
+    --accent: #f2b928; --link: #7db8f5; --chip: #222d3a; --bad: #f2928b; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding: 28px max(16px, env(safe-area-inset-left)) 56px; }
+.wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 20px; }
+.eyebrow, .label { font-family: var(--mono); font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 700; font-size: clamp(34px, 7vw, 52px); line-height: 1; margin: 4px 0 6px; }
+h1 span { background: var(--accent); color: var(--accent-ink); padding: 0 .18em; }
+.lede { color: var(--muted); margin: 0; max-width: 64ch; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; display: grid; gap: 16px; }
+.row { display: grid; gap: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button, .chip { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--chip); color: var(--fg); border-radius: 4px; padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.icao { font-family: var(--mono); font-size: 11px; opacity: .75; margin-left: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 6px 4px 10px; }
+.chip button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 4px; }
+.terms { display: flex; flex-wrap: wrap; gap: 6px; }
+form.add { display: flex; gap: 8px; flex-wrap: wrap; }
+input[type="text"], input[type="search"] { flex: 1 1 220px; min-width: 0; font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--panel); color: var(--fg); }
+.ghost { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--panel); color: var(--fg); cursor: pointer; }
+.go { font: inherit; font-weight: 700; font-size: 16px; padding: 12px 22px; border-radius: 4px; border: 0; background: var(--accent); color: var(--accent-ink); cursor: pointer; }
+.go:disabled { opacity: .6; cursor: progress; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.status { color: var(--muted); font-size: 14px; }
+.status.err { color: var(--bad); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.count { font-family: var(--display); font-size: 24px; font-weight: 600; }
+.jobs { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.job { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; }
+.job.new { border-left: 5px solid var(--accent); }
+.job h3 { margin: 0; font-size: 16px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.job h3 a { color: var(--fg); text-decoration: none; }
+.job h3 a:hover { color: var(--link); text-decoration: underline; }
+.meta { color: var(--muted); font-size: 14px; min-width: 0; }
+.meta strong { color: var(--fg); font-weight: 500; }
+.when { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; grid-row: 1 / span 2; grid-column: 2; }
+.tags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.tag { font-size: 12px; background: var(--chip); border-radius: 3px; padding: 1px 6px; color: var(--muted); }
+.salary { color: var(--fg); font-weight: 500; }
+.empty { text-align: center; color: var(--muted); padding: 36px 16px; border: 1px dashed var(--line); border-radius: 6px; }
+details.diag { font-size: 13px; color: var(--muted); }
+details.diag li.err { color: var(--bad); }
+@media (max-width: 560px) {
+  .job { grid-template-columns: 1fr; }
+  .when { grid-row: auto; grid-column: auto; text-align: left; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Vagas do LinkedIn · Setor aéreo</div>
+    <h1>Radar <span>Aviação SP</span></h1>
+    <p class="lede">Busca vagas de manutenção, planejamento e de todo o setor de aviação no LinkedIn, junta os resultados de todos os termos e remove as repetidas.</p>
+  </header>
+
+  <section class="panel" aria-label="Filtros">
+    <div class="row">
+      <span class="label" id="lbl-time">Publicadas em</span>
+      <div class="seg" role="group" aria-labelledby="lbl-time" id="time"></div>
+    </div>
+    <div class="row">
+      <span class="label" id="lbl-loc">Região</span>
+      <div class="seg" role="group" aria-labelledby="lbl-loc" id="loc"></div>
+    </div>
+    <div class="row">
+      <span class="label">Termos</span>
+      <div class="terms" id="terms"></div>
+      <form class="add" id="add-form">
+        <input id="add-input" type="text" placeholder="Adicionar termo, ex.: inspetor de qualidade aeronáutica" aria-label="Novo termo">
+        <button class="ghost" type="submit">Adicionar</button>
+        <button class="ghost" type="button" id="reset">Lista padrão</button>
+      </form>
+    </div>
+    <div class="actions">
+      <button class="go" id="go" type="button">Buscar vagas</button>
+      <span class="status" id="status" role="status"></span>
+    </div>
+  </section>
+
+  <section class="row" aria-label="Resultados" id="results" hidden>
+    <div class="toolbar">
+      <span class="count" id="count"></span>
+      <div class="actions">
+        <input id="filter" type="search" placeholder="Filtrar por cargo, empresa ou cidade" aria-label="Filtrar resultados">
+        <button class="ghost" id="csv" type="button">Baixar planilha (CSV)</button>
+      </div>
+    </div>
+    <ul class="jobs" id="jobs"></ul>
+    <details class="diag"><summary>Resultado por termo</summary><ul id="diag"></ul></details>
+  </section>
+
+  <div class="empty" id="placeholder">Escolha o período e a região e toque em <strong>Buscar vagas</strong>. A busca leva de 10 a 30 segundos.</div>
+</div>
+
+<script>
+const DEFAULT_TERMS = [
+  "planejador de manutenção aeronáutica", "planejamento e controle de manutenção aeronaves", "PCM aviação",
+  "controle técnico de manutenção", "engenharia de manutenção aeronáutica", "manutenção de aeronaves",
+  "mecânico de aeronaves", "MRO aviação", "aeronavegabilidade", "aviação", "aeronáutica"
+];
+const TIMES = [["24h", "24 horas"], ["week", "7 dias"], ["month", "30 dias"], ["any", "Qualquer data"]];
+const LOCS = [
+  ["São Paulo, São Paulo, Brasil", "São Paulo", "SBSP"],
+  ["Guarulhos, São Paulo, Brasil", "Guarulhos", "SBGR"],
+  ["Campinas, São Paulo, Brasil", "Campinas", "SBKP"],
+  ["São José dos Campos, São Paulo, Brasil", "S. J. dos Campos", "SBSJ"],
+  ["São Paulo, Brasil", "Estado de SP", ""],
+  ["Brasil", "Brasil todo", ""]
+];
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const state = {
+  time: store.get("rav.time", "week"),
+  loc: store.get("rav.loc", LOCS[0][0]),
+  terms: store.get("rav.terms", DEFAULT_TERMS.slice()),
+  jobs: []
+};
+const $ = (id) => document.getElementById(id);
+function save() { store.set("rav.time", state.time); store.set("rav.loc", state.loc); store.set("rav.terms", state.terms); }
+
+function seg(el, items, key) {
+  el.innerHTML = "";
+  for (const [value, label, icao] of items) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = label;
+    if (icao) { const s = document.createElement("span"); s.className = "icao"; s.textContent = icao; b.append(s); }
+    b.setAttribute("aria-pressed", String(state[key] === value));
+    b.onclick = () => { state[key] = value; save(); renderFilters(); };
+    el.append(b);
+  }
+}
+
+function renderFilters() {
+  seg($("time"), TIMES, "time");
+  seg($("loc"), LOCS, "loc");
+  const box = $("terms");
+  box.innerHTML = "";
+  state.terms.forEach((t, i) => {
+    const c = document.createElement("span");
+    c.className = "chip"; c.textContent = t;
+    const x = document.createElement("button");
+    x.type = "button"; x.textContent = "×"; x.setAttribute("aria-label", "Remover " + t);
+    x.onclick = () => { state.terms.splice(i, 1); save(); renderFilters(); };
+    c.append(x); box.append(c);
+  });
+}
+
+function daysAgo(iso) {
+  if (!iso) return Infinity;
+  return (Date.now() - new Date(iso + "T12:00:00").getTime()) / 86400000;
+}
+function fmtDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function renderJobs() {
+  const f = $("filter").value.trim().toLowerCase();
+  const list = state.jobs.filter(j => !f || [j.title, j.company, j.location].join(" ").toLowerCase().includes(f));
+  $("count").textContent = `${list.length} vaga${list.length === 1 ? "" : "s"}`;
+  const ul = $("jobs");
+  ul.innerHTML = "";
+  if (!list.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = state.jobs.length ? "Nenhuma vaga com esse filtro." : "Nenhuma vaga encontrada. Tente um período maior ou outra região.";
+    ul.append(li);
+    return;
+  }
+  for (const j of list) {
+    const li = document.createElement("li");
+    li.className = "job" + (daysAgo(j.date) <= 2 ? " new" : "");
+    const h = document.createElement("h3");
+    const a = document.createElement("a");
+    a.href = j.url; a.target = "_blank"; a.rel = "noopener"; a.textContent = j.title || "(sem título)";
+    h.append(a);
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const co = document.createElement("strong"); co.textContent = j.company || "Empresa não informada";
+    meta.append(co, ` · ${j.location}`);
+    if (j.salary) { const s = document.createElement("span"); s.className = "salary"; s.textContent = ` · ${j.salary}`; meta.append(s); }
+    const when = document.createElement("div");
+    when.className = "when";
+    when.textContent = [fmtDate(j.date), j.posted].filter(Boolean).join("\n");
+    when.style.whiteSpace = "pre-line";
+    const tags = document.createElement("div");
+    tags.className = "tags";
+    for (const t of j.terms) { const s = document.createElement("span"); s.className = "tag"; s.textContent = t; tags.append(s); }
+    li.append(h, when, meta, tags);
+    ul.append(li);
+  }
+}
+
+function renderDiag(terms) {
+  const ul = $("diag");
+  ul.innerHTML = "";
+  for (const t of terms) {
+    const li = document.createElement("li");
+    if (t.error) li.className = "err";
+    li.textContent = `${t.term}: ${t.count} vaga(s)${t.error ? " — " + t.error : ""}`;
+    ul.append(li);
+  }
+}
+
+async function search() {
+  if (!state.terms.length) { setStatus("Adicione ao menos um termo.", true); return; }
+  const go = $("go");
+  go.disabled = true; go.textContent = "Buscando…";
+  setStatus(`Buscando ${state.terms.length} termos no LinkedIn…`);
+  try {
+    const p = new URLSearchParams({ terms: state.terms.join("|"), location: state.loc, period: state.time });
+    const res = await fetch("/api/vagas?" + p);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Erro ${res.status}`);
+    state.jobs = data.jobs;
+    $("placeholder").hidden = true;
+    $("results").hidden = false;
+    renderJobs();
+    renderDiag(data.terms);
+    const failed = data.terms.filter(t => t.error).length;
+    const hora = new Date(data.fetchedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    setStatus(failed
+      ? `Atualizado às ${hora}. ${failed} termo(s) falharam; veja "Resultado por termo".`
+      : `Atualizado às ${hora}.`, failed === data.terms.length);
+  } catch (e) {
+    setStatus("Não foi possível buscar: " + e.message + ". Tente de novo em alguns minutos.", true);
+  } finally {
+    go.disabled = false; go.textContent = "Buscar vagas";
+  }
+}
+
+function setStatus(msg, err = false) { const s = $("status"); s.textContent = msg; s.classList.toggle("err", err); }
+
+function downloadCsv() {
+  const cols = [["title", "Cargo"], ["company", "Empresa"], ["location", "Local"], ["date", "Data"], ["salary", "Salário"], ["terms", "Termos"], ["url", "Link"]];
+  const esc = v => `"${String(Array.isArray(v) ? v.join("; ") : v ?? "").replace(/"/g, '""')}"`;
+  const rows = [cols.map(c => esc(c[1])).join(";"), ...state.jobs.map(j => cols.map(c => esc(j[c[0]])).join(";"))];
+  const blob = new Blob(["﻿" + rows.join("\r\n")], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `vagas-aviacao-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$("add-form").addEventListener("submit", e => {
+  e.preventDefault();
+  const v = $("add-input").value.trim();
+  if (v && !state.terms.includes(v)) { state.terms.push(v); save(); renderFilters(); }
+  $("add-input").value = "";
+});
+$("reset").onclick = () => { state.terms = DEFAULT_TERMS.slice(); save(); renderFilters(); };
+$("go").onclick = search;
+$("filter").oninput = renderJobs;
+$("csv").onclick = downloadCsv;
+renderFilters();
+</script>
+</body>
+</html>
