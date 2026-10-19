@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Radar Emprego Novo</title>
 <meta name="description" content="Vagas do LinkedIn, Indeed, Gupy e Vagas.com.br numa lista só, com alerta de vaga nova.">
-<meta name="theme-color" content="#e0a100">
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
@@ -16,18 +17,12 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
 :root {
-  --bg: #eef1f4; --panel: #ffffff; --fg: #16202b; --muted: #5b6876; --line: #d3dae2;
-  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #e4e9ef; --bad: #b3261e; --good: #1d7a3e;
+  --bg: #ffffff; --panel: #ffffff; --fg: #16202b; --muted: #5b6876; --line: #dde3ea;
+  --accent: #e0a100; --accent-ink: #1a1400; --link: #0b5cad; --chip: #f1f4f7; --bad: #b3261e; --good: #1d7a3e;
   --display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f151c; --panel: #17202a; --fg: #e6ecf2; --muted: #93a1b0; --line: #2a3644;
-    --accent: #f2b928; --link: #7db8f5; --chip: #222d3a; --bad: #f2928b; --good: #7fd49b; color-scheme: dark;
-  }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -89,7 +84,8 @@ select { font: inherit; font-size: 14px; padding: 7px 8px; border: 1px solid var
 .cat-2 { background: var(--chip); color: var(--fg); }
 .badge-new { font-family: var(--mono); font-size: 11px; text-transform: uppercase; color: var(--accent-ink); background: var(--accent); border-radius: 3px; padding: 1px 6px; margin-right: 6px; vertical-align: 2px; }
 .job-title { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
-.logo { width: 28px; height: 28px; border-radius: 4px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
+.logo { width: 40px; height: 40px; border-radius: 6px; object-fit: contain; background: #fff; border: 1px solid var(--line); flex: none; }
+.logo.initials { display: grid; place-items: center; font-family: var(--display); font-weight: 700; font-size: 17px; color: var(--muted); background: var(--chip); }
 .pill { font-size: 12px; border-radius: 3px; padding: 1px 6px; border: 1px solid var(--line); color: var(--fg); }
 .pill.pcd { border-color: var(--link); color: var(--link); }
 .pill.soon { border-color: var(--bad); color: var(--bad); font-weight: 600; }
@@ -120,7 +116,7 @@ details.box[open] summary::before { content: "▾ "; }
 .link-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .link-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; }
 .link-list span { min-width: 0; overflow-wrap: break-word; flex: 1 1 40%; }
-.link-list span.bars { flex: 0 1 45%; }
+.link-list span.bars { flex: 0 1 45%; overflow-wrap: normal; }
 .link-list a, .link-list button.lnk { color: var(--link); font: inherit; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; background: none; border: 0; cursor: pointer; padding: 0; }
 .bars { font-family: var(--mono); font-size: 12px; color: var(--muted); text-align: right; }
 .code { font-family: var(--mono); letter-spacing: .05em; }
@@ -492,7 +488,7 @@ function renderCompanies(list) {
     const name = document.createElement("span"); name.textContent = company;
     const bars = document.createElement("span"); bars.className = "bars";
     const cats = niche().categories;
-    bars.textContent = `${c.total} vaga${c.total === 1 ? "" : "s"}` + (cats[2] && c.top ? ` · ${c.top} em ${cats[3].toLowerCase()}/${cats[2].toLowerCase()}` : "");
+    bars.textContent = `${c.total} vaga${c.total === 1 ? "" : "s"}` + (cats[2] && c.top ? ` · ${c.top} em ${cats[3].toLowerCase()} e ${cats[2].toLowerCase()}` : "");
     const b = document.createElement("button");
     b.type = "button"; b.className = "lnk"; b.textContent = "Filtrar";
     b.onclick = () => { $("filter").value = company; renderJobs(); $("jobs").scrollIntoView({ behavior: "smooth" }); };
@@ -510,11 +506,20 @@ function jobCard(j) {
   const h = document.createElement("h3");
   const head = document.createElement("div");
   head.className = "job-title";
+  // Logo da empresa; sem logo (ou se a imagem falhar), as iniciais no lugar.
+  const initials = () => {
+    const d = document.createElement("span");
+    d.className = "logo initials"; d.setAttribute("aria-hidden", "true");
+    d.textContent = (j.company || j.title || "?").replace(/[^\p{L}\p{N} ]/gu, "").split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase() || "?";
+    return d;
+  };
   if (j.logo) {
     const img = document.createElement("img");
     img.className = "logo"; img.src = j.logo; img.alt = ""; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-    img.onerror = () => img.remove();
+    img.onerror = () => img.replaceWith(initials());
     head.append(img);
+  } else {
+    head.append(initials());
   }
   head.append(h);
   if (state.fresh.has(key)) { const b = document.createElement("span"); b.className = "badge-new"; b.textContent = "Nova"; h.append(b); }
@@ -904,6 +909,9 @@ async function boot() {
   renderFilters();
   showCached();
   pullStatuses();
+  const last = store.get(`rav.last.${state.niche}`, null);
+  const stale = !last?.jobs?.length || Date.now() - new Date(last.fetchedAt).getTime() > 2 * 3600000 || !("workplace" in last.jobs[0]);
+  if (stale && state.terms.length) search();
 }
 boot();
 
