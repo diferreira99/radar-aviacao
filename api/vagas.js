@@ -9,12 +9,21 @@ const SOURCES = { linkedin, indeed, gupy, vagas };
 const MAX_TERMS = 15;
 const CONCURRENCY = 6;
 
-// GET /api/vagas?sources=linkedin,indeed,gupy,vagas&terms=a|b|c&loc=sp&period=week&pages=3
+// Termos colados já codificados ("mecânico%20de%20aeronaves") chegam com o %20 literal.
+function decodeTerm(t) {
+  try {
+    return /%[0-9a-f]{2}/i.test(t) ? decodeURIComponent(t) : t;
+  } catch {
+    return t;
+  }
+}
+
+// GET /api/vagas?sources=linkedin,indeed,gupy,vagas&terms=a|b|c&loc=sp&period=week&pages=3[&debug=1]
 export default async function handler(req, res) {
   const url = new URL(req.url, "http://localhost");
   const terms = (url.searchParams.get("terms") ?? "")
     .split("|")
-    .map((t) => t.trim())
+    .map((t) => decodeTerm(t).trim())
     .filter(Boolean)
     .slice(0, MAX_TERMS);
   if (!terms.length) {
@@ -30,6 +39,7 @@ export default async function handler(req, res) {
   const loc = LOCATIONS[locKey];
   const period = url.searchParams.get("period") ?? "week";
   const pages = Math.min(Math.max(Number(url.searchParams.get("pages")) || 3, 1), 6);
+  const debug = url.searchParams.get("debug") === "1";
 
   const tasks = sources.flatMap((source) => terms.map((term) => ({ source, term })));
   const results = [];
@@ -37,7 +47,7 @@ export default async function handler(req, res) {
     Array.from({ length: CONCURRENCY }, async () => {
       while (tasks.length) {
         const { source, term } = tasks.shift();
-        const r = await SOURCES[source].search({ term, loc, period, pages });
+        const r = await SOURCES[source].search({ term, loc, period, pages, debug });
         results.push({ source, term, ...r });
       }
     })
@@ -62,11 +72,17 @@ export default async function handler(req, res) {
   }
   const jobs = [...merged.values()].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
 
-  res.setHeader("Cache-Control", "s-maxage=600, stale-while-revalidate=1800");
+  res.setHeader("Cache-Control", debug ? "no-store" : "s-maxage=600, stale-while-revalidate=1800");
   res.status(200).json({
     fetchedAt: new Date().toISOString(),
     loc: locKey,
     jobs,
-    runs: results.map((r) => ({ source: r.source, term: r.term, count: r.jobs.length, error: r.error })),
+    runs: results.map((r) => ({
+      source: r.source,
+      term: r.term,
+      count: r.jobs.length,
+      error: r.error,
+      ...(debug && { sample: r.sample }),
+    })),
   });
 }
